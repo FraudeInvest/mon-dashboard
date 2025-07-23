@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, FunnelChart, Funnel, LabelList } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, FunnelChart, Funnel, LabelList, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { 
     LayoutDashboard, FolderKanban, BarChart3, Settings, Bell, UserCircle, Search, PlusCircle,
     FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock
@@ -144,7 +144,7 @@ const FranceMap = ({ data }) => {
     }
 
     const maxIncidents = Math.max(...Object.values(incidentsByDept), 0);
-    const colorScale = window.d3.scaleSequential(window.d3.interpolateBlues).domain([0, maxIncidents || 1]);
+    const colorScale = window.d3.scaleSequential(window.d3.interpolateViridis).domain([0, maxIncidents || 1]);
     const projection = window.d3.geoConicConformal().center([2.454071, 46.279229]).scale(2600).translate([450 / 2, 400 / 2]);
     const pathGenerator = window.d3.geoPath().projection(projection);
 
@@ -237,35 +237,111 @@ const CasesView = () => {
     const ITEMS_PER_PAGE = 10;
     const paginatedData = allCases.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     return (
-    <div><div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold text-gray-800">Gestion des Dossiers</h2><button className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition"><PlusCircle size={20}/> Nouveau Dossier</button></div><div className="bg-white p-4 rounded-lg shadow-md overflow-x-auto"><table className="w-full text-left"><thead className="border-b-2 border-gray-200"><tr><th className="p-3 text-sm font-semibold text-gray-600">N° Dossier</th><th className="p-3 text-sm font-semibold text-gray-600">Date Saisine</th><th className="p-3 text-sm font-semibold text-gray-600">Compagnie</th><th className="p-3 text-sm font-semibold text-gray-600">Nature Sinistre</th><th className="p-3 text-sm font-semibold text-gray-600">Montant</th><th className="p-3 text-sm font-semibold text-gray-600">Date Clôture</th><th className="p-3 text-sm font-semibold text-gray-600">Résultat</th><th className="p-3 text-sm font-semibold text-gray-600">Actions</th></tr></thead><tbody>{paginatedData.map((c) => (<tr key={c.id} className="border-b border-gray-200 hover:bg-gray-50"><td className="p-3 font-medium text-gray-800">{c.id}</td><td className="p-3 text-gray-600">{c.dateSaisine}</td><td className="p-3 text-gray-600">{c.compagnie}</td><td className="p-3 text-gray-600">{c.nature}</td><td className="p-3 text-gray-600">{c.montant.toLocaleString('fr-FR')} €</td><td className="p-3 text-gray-600">{c.dateCloture || 'N/A'}</td><td className="p-3">{getResultPill(c.resultat)}</td><td className="p-3"><button className="text-blue-600 hover:underline">Voir</button></td></tr>))}</tbody></table><Pagination currentPage={currentPage} totalItems={allCases.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} /></div></div>
+    <div>
+        <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+                <FolderKanban className="text-yellow-500" size={32} />
+                <h2 className="text-3xl font-bold text-gray-800">Gestion des Dossiers</h2>
+            </div>
+            <button className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
+                <PlusCircle size={20}/> Nouveau Dossier
+            </button>
+        </div>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                    <thead className="bg-blue-100">
+                        <tr>
+                            <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">N° Dossier</th>
+                            <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Date Saisine</th>
+                            <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Compagnie</th>
+                            <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Nature Sinistre</th>
+                            <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Montant</th>
+                            <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Date Clôture</th>
+                            <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Résultat</th>
+                            <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {paginatedData.map((c) => (
+                            <tr key={c.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                <td className="p-4 font-medium text-gray-800">{c.id}</td>
+                                <td className="p-4 text-gray-600">{c.dateSaisine}</td>
+                                <td className="p-4 text-gray-600">{c.compagnie}</td>
+                                <td className="p-4 text-gray-600">{c.nature}</td>
+                                <td className="p-4 text-gray-600">{c.montant.toLocaleString('fr-FR')} €</td>
+                                <td className="p-4 text-gray-600">{c.dateCloture || 'N/A'}</td>
+                                <td className="p-4">{getResultPill(c.resultat)}</td>
+                                <td className="p-4"><button className="text-blue-600 hover:underline">Voir</button></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            <Pagination currentPage={currentPage} totalItems={allCases.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
+        </div>
+    </div>
     );
 };
 
 const ReportsView = () => {
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF4560'];
+    const NEW_PALETTE = ['#2980B9', '#16A085', '#F39C12', '#E91E63', '#8E44AD', '#3498DB', '#1ABC9C'];
     const RADIAN = Math.PI / 180;
-    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
         const x = cx + radius * Math.cos(-midAngle * RADIAN);
         const y = cy + radius * Math.sin(-midAngle * RADIAN);
         return (<text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text>);
+    };
+    
+    const darkenColor = (color, percent) => {
+        let f=parseInt(color.slice(1),16),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=f>>16,G=f>>8&0x00FF,B=f&0x0000FF;
+        return "#"+(0x1000000+(Math.round((t-R)*p)+R)*0x10000+(Math.round((t-G)*p)+G)*0x100+(Math.round((t-B)*p)+B)).toString(16).slice(1);
     };
 
     const dataByNature = useMemo(() => { const counts = allCases.reduce((acc, c) => { acc[c.nature] = (acc[c.nature] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, []);
     const dataByResult = useMemo(() => { const closed = allCases.filter(c => c.resultat); const counts = closed.reduce((acc, c) => { acc[c.resultat] = (acc[c.resultat] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, []);
     const dataByCompany = useMemo(() => { const counts = allCases.reduce((acc, c) => { acc[c.compagnie] = (acc[c.compagnie] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, Saisines: counts[key] })).sort((a,b) => b.Saisines - a.Saisines); }, []);
     const dataByMonth = useMemo(() => { const counts = allCases.reduce((acc, c) => { const month = c.dateSaisine.substring(0, 7); acc[month] = (acc[month] || 0) + 1; return acc; }, {}); return Object.keys(counts).sort().map(key => ({ name: key, Dossiers: counts[key] })); }, []);
-    const dataAmountByNature = useMemo(() => { const amounts = allCases.reduce((acc, c) => { acc[c.nature] = (acc[c.nature] || 0) + c.montant; return acc; }, {}); return Object.keys(amounts).map(key => ({ name: key, Montant: amounts[key] })); }, []);
-    const funnelData = useMemo(() => { const total = allCases.length; const closed = allCases.filter(c => c.resultat).length; const positive = allCases.filter(c => c.resultat === 'Positif').length; return [{ value: total, name: 'Saisis', fill: '#8884d8' }, { value: closed, name: 'Clôturés', fill: '#83a6ed' }, { value: positive, name: 'Positifs', fill: '#82ca9d' }]; }, []);
+    
+    const dataResolutionTime = useMemo(() => {
+        const natureGroups = {};
+        allCases.filter(c => c.dateCloture).forEach(c => {
+            const duration = (new Date(c.dateCloture) - new Date(c.dateSaisine)) / (1000 * 3600 * 24);
+            if (!natureGroups[c.nature]) natureGroups[c.nature] = [];
+            natureGroups[c.nature].push(duration);
+        });
+        return Object.keys(natureGroups).map(nature => ({
+            name: nature,
+            'Délai moyen (jours)': Math.round(natureGroups[nature].reduce((a, b) => a + b, 0) / natureGroups[nature].length)
+        }));
+    }, []);
+
+    const dataAmountVsDuration = useMemo(() => {
+        return allCases.filter(c => c.dateCloture).map(c => ({
+            montant: c.montant,
+            duree: (new Date(c.dateCloture) - new Date(c.dateSaisine)) / (1000 * 3600 * 24)
+        }));
+    }, []);
+
+    const dataResultsByCompany = useMemo(() => {
+        const companyGroups = {};
+        allCases.forEach(c => {
+            if (!companyGroups[c.compagnie]) companyGroups[c.compagnie] = { Positif: 0, Négatif: 0 };
+            if (c.resultat === 'Positif') companyGroups[c.compagnie].Positif++;
+            else if (c.resultat === 'Négatif') companyGroups[c.compagnie].Négatif++;
+        });
+        return Object.keys(companyGroups).map(compagnie => ({ name: compagnie, ...companyGroups[compagnie] }));
+    }, []);
 
     return (
     <div><h2 className="text-3xl font-bold text-gray-800 mb-6">Analyse & Rapports</h2><div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={120}>{dataByNature.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-        <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultat Global</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByResult} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByResult.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.name === 'Positif' ? '#28a745' : '#dc3545'} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-        <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Taux de Conversion</h3><ResponsiveContainer width="100%" height={300}><FunnelChart><Tooltip /><Funnel dataKey="value" data={funnelData} isAnimationActive><LabelList position="right" fill="#000" stroke="none" dataKey="name" /></Funnel></FunnelChart></ResponsiveContainer></div>
-        <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Évolution des saisines par mois</h3><ResponsiveContainer width="100%" height={300}><LineChart data={dataByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="Dossiers" stroke="#8884d8" activeDot={{ r: 8 }} /></LineChart></ResponsiveContainer></div>
-        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Nombre de saisines par compagnie</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataByCompany} layout="vertical" margin={{left: 100}}><CartesianGrid strokeDasharray="3 3" /><XAxis type="number" /><YAxis dataKey="name" type="category" width={80} /><Tooltip /><Bar dataKey="Saisines" fill="#8884d8" /></BarChart></ResponsiveContainer></div>
-        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Montant total des sinistres par nature</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataAmountByNature} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip formatter={(value) => `${value.toLocaleString('fr-FR')} €`} /><Legend /><Bar dataKey="Montant" fill="#82ca9d" /></BarChart></ResponsiveContainer></div>
+        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByNature} dataKey="value" cx="50%" cy="52%" outerRadius={120} isAnimationActive={false}>{dataByNature.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={darkenColor(NEW_PALETTE[index % NEW_PALETTE.length], 0.2)} />)}</Pie><Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={120}>{dataByNature.map((entry, index) => <Cell key={`cell-main-${index}`} fill={NEW_PALETTE[index % NEW_PALETTE.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+        <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultat Global</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByResult} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByResult.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={entry.name === 'Positif' ? darkenColor('#16A085', 0.2) : darkenColor('#E91E63', 0.2)} />)}</Pie><Pie data={dataByResult} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByResult.map((entry, index) => <Cell key={`cell-main-${index}`} fill={entry.name === 'Positif' ? '#16A085' : '#E91E63'} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+        <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultats par Compagnie</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataResultsByCompany} stackOffset="sign"><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Bar dataKey="Positif" fill="#93C572" stackId="stack" /><Bar dataKey="Négatif" fill="#DC2626" stackId="stack" /></BarChart></ResponsiveContainer></div>
+        <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Évolution des saisines par mois</h3><ResponsiveContainer width="100%" height={300}><LineChart data={dataByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="Dossiers" stroke="#2980B9" strokeWidth={2} activeDot={{ r: 8 }} /></LineChart></ResponsiveContainer></div>
+        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Délai moyen de résolution par nature</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataResolutionTime}><defs><linearGradient id="colorPastel" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2980B9" stopOpacity={0.9}/><stop offset="95%" stopColor="#8E44AD" stopOpacity={0.6}/></linearGradient></defs><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="Délai moyen (jours)" fill="url(#colorPastel)" /></BarChart></ResponsiveContainer></div>
+        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Montant vs. Durée d'enquête</h3><ResponsiveContainer width="100%" height={300}><ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><CartesianGrid /><XAxis type="number" dataKey="montant" name="Montant" unit="€" /><YAxis type="number" dataKey="duree" name="Durée" unit="j" /><Tooltip cursor={{ strokeDasharray: '3 3' }} /><Scatter name="Dossiers" data={dataAmountVsDuration} fill="#B22222" /></ScatterChart></ResponsiveContainer></div>
         <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Cartographie des Sinistres</h3><FranceMap data={allCases} /></div>
     </div></div>
   );
