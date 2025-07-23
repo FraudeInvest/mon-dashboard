@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, FunnelChart, Funnel, LabelList, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { 
-    LayoutDashboard, FolderKanban, BarChart3, Settings, Bell, UserCircle, Search, PlusCircle,
-    FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock
+    LayoutDashboard, FolderKanban, BarChart3, Settings, Bell, UserCircle, Search, PlusCircle, Upload, FileDown,
+    FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock, Info
 } from 'lucide-react';
 
 // --- DATA GENERATION SCRIPT (EXPANDED) ---
@@ -225,10 +225,59 @@ const DashboardView = ({ cases }) => {
   );
 }
 
-const CasesView = ({ cases }) => {
+const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
     const paginatedData = cases.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file || !isXlsxLoaded) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const bstr = evt.target.result;
+                const wb = window.XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = window.XLSX.utils.sheet_to_json(ws);
+                // Basic validation and mapping
+                const formattedData = data.map((row, index) => ({
+                    id: row['id'] || `IMPORT-${index}`,
+                    dateSaisine: row['dateSaisine'] || new Date().toISOString().split('T')[0],
+                    numSinistre: row['numSinistre'] || 'N/A',
+                    compagnie: row['compagnie'] || 'N/A',
+                    dateSinistre: row['dateSinistre'] || 'N/A',
+                    nature: row['nature'] || 'N/A',
+                    adresse: row['adresse'] || 'N/A',
+                    departmentCode: row['departmentCode'] || null,
+                    montant: Number(row['montant']) || 0,
+                    dateCloture: row['dateCloture'] || null,
+                    resultat: row['resultat'] || null,
+                }));
+                setCases(formattedData);
+                setNotification({type: 'success', message: `Importation réussie ! ${formattedData.length} dossiers ont été chargés.`});
+            } catch (error) {
+                console.error("Error reading file:", error);
+                setNotification({type: 'error', message: "Erreur lors de la lecture du fichier."});
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+    
+    const handleExport = () => {
+        if (!isXlsxLoaded) {
+            setNotification({type: 'error', message: "La librairie d'export n'est pas encore chargée."});
+            return;
+        }
+        const ws = window.XLSX.utils.json_to_sheet(cases);
+        const wb = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(wb, ws, "Dossiers");
+        window.XLSX.writeFile(wb, "export_dossiers.xlsx");
+        setNotification({type: 'success', message: "Exportation réussie."});
+    };
+
     return (
     <div>
         <div className="flex justify-between items-center mb-6">
@@ -236,9 +285,18 @@ const CasesView = ({ cases }) => {
                 <FolderKanban className="text-yellow-500" size={32} />
                 <h2 className="text-3xl font-bold text-gray-800">Gestion des Dossiers</h2>
             </div>
-            <button className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
-                <PlusCircle size={20}/> Nouveau Dossier
-            </button>
+            <div className="flex items-center gap-2">
+                 <label htmlFor="file-upload" className={`cursor-pointer flex items-center gap-2 bg-orange-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-orange-600 transition ${!isXlsxLoaded && 'opacity-50 cursor-not-allowed'}`}>
+                    <Upload size={20}/> Importer
+                </label>
+                <input id="file-upload" type="file" className="hidden" onChange={handleFileUpload} accept=".xlsx, .xls, .csv" disabled={!isXlsxLoaded}/>
+                <button onClick={handleExport} className={`flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition ${!isXlsxLoaded && 'opacity-50 cursor-not-allowed'}`} disabled={!isXlsxLoaded}>
+                    <FileDown size={20}/> Exporter
+                </button>
+                <button className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
+                    <PlusCircle size={20}/> Nouveau Dossier
+                </button>
+            </div>
         </div>
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="overflow-x-auto">
@@ -278,7 +336,7 @@ const CasesView = ({ cases }) => {
 };
 
 const ReportsView = ({ cases }) => {
-    const DARK_VIBRANT_COLORS = ['#003f5c', '#374c80', '#7a5195', '#bc5090', '#ef5675', '#ff764a', '#ffa600'];
+    const NEW_PALETTE = ['#2980B9', '#16A085', '#F39C12', '#E91E63', '#8E44AD', '#3498DB', '#1ABC9C'];
     const RADIAN = Math.PI / 180;
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -329,11 +387,11 @@ const ReportsView = ({ cases }) => {
 
     return (
     <div><h2 className="text-3xl font-bold text-gray-800 mb-6">Analyse & Rapports</h2><div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByNature} dataKey="value" cx="50%" cy="52%" outerRadius={120} isAnimationActive={false}>{dataByNature.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={darkenColor(DARK_VIBRANT_COLORS[index % DARK_VIBRANT_COLORS.length], 0.2)} />)}</Pie><Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={120}>{dataByNature.map((entry, index) => <Cell key={`cell-main-${index}`} fill={DARK_VIBRANT_COLORS[index % DARK_VIBRANT_COLORS.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-        <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultat Global</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByResult} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByResult.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={entry.name === 'Positif' ? darkenColor('#006400', 0.2) : darkenColor('#8B0000', 0.2)} />)}</Pie><Pie data={dataByResult} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByResult.map((entry, index) => <Cell key={`cell-main-${index}`} fill={entry.name === 'Positif' ? '#006400' : '#8B0000'} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByNature} dataKey="value" cx="50%" cy="52%" outerRadius={120} isAnimationActive={false}>{dataByNature.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={darkenColor(NEW_PALETTE[index % NEW_PALETTE.length], 0.2)} />)}</Pie><Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={120}>{dataByNature.map((entry, index) => <Cell key={`cell-main-${index}`} fill={NEW_PALETTE[index % NEW_PALETTE.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+        <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultat Global</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByResult} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByResult.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={entry.name === 'Positif' ? darkenColor('#16A085', 0.2) : darkenColor('#E91E63', 0.2)} />)}</Pie><Pie data={dataByResult} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByResult.map((entry, index) => <Cell key={`cell-main-${index}`} fill={entry.name === 'Positif' ? '#16A085' : '#E91E63'} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
         <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultats par Compagnie</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataResultsByCompany} stackOffset="sign"><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Bar dataKey="Positif" fill="#93C572" stackId="stack" /><Bar dataKey="Négatif" fill="#DC2626" stackId="stack" /></BarChart></ResponsiveContainer></div>
-        <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Évolution des saisines par mois</h3><ResponsiveContainer width="100%" height={300}><LineChart data={dataByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="Dossiers" stroke="#003f5c" strokeWidth={2} activeDot={{ r: 8 }} /></LineChart></ResponsiveContainer></div>
-        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Délai moyen de résolution par nature</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataResolutionTime}><defs><linearGradient id="colorBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#003f5c" stopOpacity={0.9}/><stop offset="95%" stopColor="#7a5195" stopOpacity={0.6}/></linearGradient></defs><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="Délai moyen (jours)" fill="url(#colorBlue)" /></BarChart></ResponsiveContainer></div>
+        <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Évolution des saisines par mois</h3><ResponsiveContainer width="100%" height={300}><LineChart data={dataByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="Dossiers" stroke="#2980B9" strokeWidth={2} activeDot={{ r: 8 }} /></LineChart></ResponsiveContainer></div>
+        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Délai moyen de résolution par nature</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataResolutionTime}><defs><linearGradient id="colorPastel" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2980B9" stopOpacity={0.9}/><stop offset="95%" stopColor="#8E44AD" stopOpacity={0.6}/></linearGradient></defs><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="Délai moyen (jours)" fill="url(#colorPastel)" /></BarChart></ResponsiveContainer></div>
         <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Montant vs. Durée d'enquête</h3><ResponsiveContainer width="100%" height={300}><ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><CartesianGrid /><XAxis type="number" dataKey="montant" name="Montant" unit="€" /><YAxis type="number" dataKey="duree" name="Durée" unit="j" /><Tooltip cursor={{ strokeDasharray: '3 3' }} /><Scatter name="Dossiers" data={dataAmountVsDuration} fill="#B22222" /></ScatterChart></ResponsiveContainer></div>
         <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Cartographie des Sinistres</h3><FranceMap data={cases} /></div>
     </div></div>
@@ -370,15 +428,27 @@ const ArpView = () => {
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [allCases, setAllCases] = useState(() => generateCasesData(100));
+  const [notification, setNotification] = useState({type: '', message: ''});
+  const [isXlsxLoaded, setIsXlsxLoaded] = useState(false);
+  
   const allFactures = useMemo(() => generateFacturesContacts(100), []);
   const allMairies = useMemo(() => generateMairiesData(100), []);
   const allArpFrance = useMemo(() => generateArpFranceData(100), []);
   const allArpMonde = useMemo(() => generateArpMondeData(100), []);
 
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    script.async = true;
+    script.onload = () => setIsXlsxLoaded(true);
+    document.body.appendChild(script);
+    return () => { if (document.body.contains(script)) document.body.removeChild(script); };
+  }, []);
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <DashboardView cases={allCases} />;
-      case 'cases': return <CasesView cases={allCases} />;
+      case 'cases': return <CasesView cases={allCases} setCases={setAllCases} setNotification={setNotification} isXlsxLoaded={isXlsxLoaded} />;
       case 'reports': return <ReportsView cases={allCases} />;
       case 'factures': return <PaginatedTableView title="Vérification des Factures" data={allFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
       case 'mairies': return <PaginatedTableView title="Répertoire des Mairies" data={allMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
@@ -390,6 +460,8 @@ export default function App() {
   };
 
   const NavLink = ({ id, icon: Icon, label }) => (<button onClick={() => setActiveTab(id)} className={`flex items-center w-full text-left px-4 py-3 rounded-lg transition-colors ${activeTab === id ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}><Icon size={22} className="mr-4" /><span className="font-medium">{label}</span></button>);
+  
+  const notifBgColor = notification.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
@@ -400,7 +472,14 @@ export default function App() {
         </div>
         <div><NavLink id="settings" icon={Settings} label="Paramètres" /></div>
       </nav>
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col relative">
+        {notification.message && (
+            <div className={`absolute top-4 right-4 ${notifBgColor} px-4 py-3 rounded-lg shadow-lg flex items-center z-50`}>
+                <Info size={20} className="mr-3"/>
+                <span className="block sm:inline">{notification.message}</span>
+                <button onClick={() => setNotification({type:'', message:''})} className="ml-4 font-bold">X</button>
+            </div>
+        )}
         <header className="bg-white shadow-sm p-4 flex justify-between items-center">
             <div className="relative w-1/3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} /><input type="text" placeholder="Rechercher un dossier, un assuré..." className="w-full bg-gray-100 border-transparent rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
             <div className="flex items-center gap-4"><Bell size={24} className="text-gray-600" /><div className="flex items-center gap-2"><UserCircle size={32} className="text-gray-600" /><div><p className="font-semibold text-sm text-gray-800">John Doe</p><p className="text-xs text-gray-500">Enquêteur Principal</p></div></div></div>
