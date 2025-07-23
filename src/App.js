@@ -79,13 +79,6 @@ const generateArpMondeData = (count) => Array.from({ length: count }, () => ({
     telFixe: `+${randomNum(10,99)}...`, telPort: `+${randomNum(10,99)}...`, mail: `${getRandom(a_noms).toLowerCase()}@global-invest.com`, langue: getRandom(a_langues)
 }));
 
-// --- GENERATED DATA ---
-const allCases = generateCasesData(100);
-const allFactures = generateFacturesContacts(100);
-const allMairies = generateMairiesData(100);
-const allArpFrance = generateArpFranceData(100);
-const allArpMonde = generateArpMondeData(100);
-
 // --- HELPERS & PAGINATION ---
 const getResultPill = (result) => {
     if (!result) return <span className="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-100 rounded-full">En attente</span>;
@@ -185,10 +178,10 @@ const FranceMap = ({ data }) => {
 
 
 // --- VIEWS / COMPONENTS ---
-const DashboardView = () => {
-    const casesInProgress = allCases.filter(c => !c.resultat).length;
-    const casesClosed = allCases.filter(c => c.resultat).length;
-    const positiveResults = allCases.filter(c => c.resultat === 'Positif').length;
+const DashboardView = ({ cases }) => {
+    const casesInProgress = cases.filter(c => !c.resultat).length;
+    const casesClosed = cases.filter(c => c.resultat).length;
+    const positiveResults = cases.filter(c => c.resultat === 'Positif').length;
     const positiveRate = casesClosed > 0 ? ((positiveResults / casesClosed) * 100).toFixed(0) : 0;
     
     const StatCard = ({ title, value, icon: Icon, colorClass }) => (
@@ -217,7 +210,7 @@ const DashboardView = () => {
         <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
             <h3 className="font-bold text-gray-800 mb-4">Dossiers Récents</h3>
             <ul>
-                {allCases.slice(0, 5).map(c => (
+                {cases.slice(0, 5).map(c => (
                     <li key={c.id} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0">
                         <div>
                             <p className="font-semibold text-gray-700">{c.id} - {c.compagnie}</p>
@@ -232,10 +225,10 @@ const DashboardView = () => {
   );
 }
 
-const CasesView = () => {
+const CasesView = ({ cases }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
-    const paginatedData = allCases.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+    const paginatedData = cases.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     return (
     <div>
         <div className="flex justify-between items-center mb-6">
@@ -278,14 +271,14 @@ const CasesView = () => {
                     </tbody>
                 </table>
             </div>
-            <Pagination currentPage={currentPage} totalItems={allCases.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
+            <Pagination currentPage={currentPage} totalItems={cases.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
         </div>
     </div>
     );
 };
 
-const ReportsView = () => {
-    const NEW_PALETTE = ['#2980B9', '#16A085', '#F39C12', '#E91E63', '#8E44AD', '#3498DB', '#1ABC9C'];
+const ReportsView = ({ cases }) => {
+    const DARK_VIBRANT_COLORS = ['#003f5c', '#374c80', '#7a5195', '#bc5090', '#ef5675', '#ff764a', '#ffa600'];
     const RADIAN = Math.PI / 180;
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -299,14 +292,14 @@ const ReportsView = () => {
         return "#"+(0x1000000+(Math.round((t-R)*p)+R)*0x10000+(Math.round((t-G)*p)+G)*0x100+(Math.round((t-B)*p)+B)).toString(16).slice(1);
     };
 
-    const dataByNature = useMemo(() => { const counts = allCases.reduce((acc, c) => { acc[c.nature] = (acc[c.nature] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, []);
-    const dataByResult = useMemo(() => { const closed = allCases.filter(c => c.resultat); const counts = closed.reduce((acc, c) => { acc[c.resultat] = (acc[c.resultat] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, []);
-    const dataByCompany = useMemo(() => { const counts = allCases.reduce((acc, c) => { acc[c.compagnie] = (acc[c.compagnie] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, Saisines: counts[key] })).sort((a,b) => b.Saisines - a.Saisines); }, []);
-    const dataByMonth = useMemo(() => { const counts = allCases.reduce((acc, c) => { const month = c.dateSaisine.substring(0, 7); acc[month] = (acc[month] || 0) + 1; return acc; }, {}); return Object.keys(counts).sort().map(key => ({ name: key, Dossiers: counts[key] })); }, []);
+    const dataByNature = useMemo(() => { const counts = cases.reduce((acc, c) => { acc[c.nature] = (acc[c.nature] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, [cases]);
+    const dataByResult = useMemo(() => { const closed = cases.filter(c => c.resultat); const counts = closed.reduce((acc, c) => { acc[c.resultat] = (acc[c.resultat] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, [cases]);
+    const dataByCompany = useMemo(() => { const counts = cases.reduce((acc, c) => { acc[c.compagnie] = (acc[c.compagnie] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, Saisines: counts[key] })).sort((a,b) => b.Saisines - a.Saisines); }, [cases]);
+    const dataByMonth = useMemo(() => { const counts = cases.reduce((acc, c) => { const month = c.dateSaisine.substring(0, 7); acc[month] = (acc[month] || 0) + 1; return acc; }, {}); return Object.keys(counts).sort().map(key => ({ name: key, Dossiers: counts[key] })); }, [cases]);
     
     const dataResolutionTime = useMemo(() => {
         const natureGroups = {};
-        allCases.filter(c => c.dateCloture).forEach(c => {
+        cases.filter(c => c.dateCloture).forEach(c => {
             const duration = (new Date(c.dateCloture) - new Date(c.dateSaisine)) / (1000 * 3600 * 24);
             if (!natureGroups[c.nature]) natureGroups[c.nature] = [];
             natureGroups[c.nature].push(duration);
@@ -315,34 +308,34 @@ const ReportsView = () => {
             name: nature,
             'Délai moyen (jours)': Math.round(natureGroups[nature].reduce((a, b) => a + b, 0) / natureGroups[nature].length)
         }));
-    }, []);
+    }, [cases]);
 
     const dataAmountVsDuration = useMemo(() => {
-        return allCases.filter(c => c.dateCloture).map(c => ({
+        return cases.filter(c => c.dateCloture).map(c => ({
             montant: c.montant,
             duree: (new Date(c.dateCloture) - new Date(c.dateSaisine)) / (1000 * 3600 * 24)
         }));
-    }, []);
+    }, [cases]);
 
     const dataResultsByCompany = useMemo(() => {
         const companyGroups = {};
-        allCases.forEach(c => {
+        cases.forEach(c => {
             if (!companyGroups[c.compagnie]) companyGroups[c.compagnie] = { Positif: 0, Négatif: 0 };
             if (c.resultat === 'Positif') companyGroups[c.compagnie].Positif++;
             else if (c.resultat === 'Négatif') companyGroups[c.compagnie].Négatif++;
         });
         return Object.keys(companyGroups).map(compagnie => ({ name: compagnie, ...companyGroups[compagnie] }));
-    }, []);
+    }, [cases]);
 
     return (
     <div><h2 className="text-3xl font-bold text-gray-800 mb-6">Analyse & Rapports</h2><div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByNature} dataKey="value" cx="50%" cy="52%" outerRadius={120} isAnimationActive={false}>{dataByNature.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={darkenColor(NEW_PALETTE[index % NEW_PALETTE.length], 0.2)} />)}</Pie><Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={120}>{dataByNature.map((entry, index) => <Cell key={`cell-main-${index}`} fill={NEW_PALETTE[index % NEW_PALETTE.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-        <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultat Global</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByResult} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByResult.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={entry.name === 'Positif' ? darkenColor('#16A085', 0.2) : darkenColor('#E91E63', 0.2)} />)}</Pie><Pie data={dataByResult} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByResult.map((entry, index) => <Cell key={`cell-main-${index}`} fill={entry.name === 'Positif' ? '#16A085' : '#E91E63'} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByNature} dataKey="value" cx="50%" cy="52%" outerRadius={120} isAnimationActive={false}>{dataByNature.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={darkenColor(DARK_VIBRANT_COLORS[index % DARK_VIBRANT_COLORS.length], 0.2)} />)}</Pie><Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={120}>{dataByNature.map((entry, index) => <Cell key={`cell-main-${index}`} fill={DARK_VIBRANT_COLORS[index % DARK_VIBRANT_COLORS.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
+        <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultat Global</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByResult} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByResult.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={entry.name === 'Positif' ? darkenColor('#006400', 0.2) : darkenColor('#8B0000', 0.2)} />)}</Pie><Pie data={dataByResult} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByResult.map((entry, index) => <Cell key={`cell-main-${index}`} fill={entry.name === 'Positif' ? '#006400' : '#8B0000'} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
         <div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultats par Compagnie</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataResultsByCompany} stackOffset="sign"><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Bar dataKey="Positif" fill="#93C572" stackId="stack" /><Bar dataKey="Négatif" fill="#DC2626" stackId="stack" /></BarChart></ResponsiveContainer></div>
-        <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Évolution des saisines par mois</h3><ResponsiveContainer width="100%" height={300}><LineChart data={dataByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="Dossiers" stroke="#2980B9" strokeWidth={2} activeDot={{ r: 8 }} /></LineChart></ResponsiveContainer></div>
-        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Délai moyen de résolution par nature</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataResolutionTime}><defs><linearGradient id="colorPastel" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2980B9" stopOpacity={0.9}/><stop offset="95%" stopColor="#8E44AD" stopOpacity={0.6}/></linearGradient></defs><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="Délai moyen (jours)" fill="url(#colorPastel)" /></BarChart></ResponsiveContainer></div>
+        <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Évolution des saisines par mois</h3><ResponsiveContainer width="100%" height={300}><LineChart data={dataByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="Dossiers" stroke="#003f5c" strokeWidth={2} activeDot={{ r: 8 }} /></LineChart></ResponsiveContainer></div>
+        <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Délai moyen de résolution par nature</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataResolutionTime}><defs><linearGradient id="colorBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#003f5c" stopOpacity={0.9}/><stop offset="95%" stopColor="#7a5195" stopOpacity={0.6}/></linearGradient></defs><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="Délai moyen (jours)" fill="url(#colorBlue)" /></BarChart></ResponsiveContainer></div>
         <div className="xl:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Montant vs. Durée d'enquête</h3><ResponsiveContainer width="100%" height={300}><ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><CartesianGrid /><XAxis type="number" dataKey="montant" name="Montant" unit="€" /><YAxis type="number" dataKey="duree" name="Durée" unit="j" /><Tooltip cursor={{ strokeDasharray: '3 3' }} /><Scatter name="Dossiers" data={dataAmountVsDuration} fill="#B22222" /></ScatterChart></ResponsiveContainer></div>
-        <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Cartographie des Sinistres</h3><FranceMap data={allCases} /></div>
+        <div className="xl:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Cartographie des Sinistres</h3><FranceMap data={cases} /></div>
     </div></div>
   );
 }
@@ -376,18 +369,23 @@ const ArpView = () => {
 // --- MAIN APP ---
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [allCases, setAllCases] = useState(() => generateCasesData(100));
+  const allFactures = useMemo(() => generateFacturesContacts(100), []);
+  const allMairies = useMemo(() => generateMairiesData(100), []);
+  const allArpFrance = useMemo(() => generateArpFranceData(100), []);
+  const allArpMonde = useMemo(() => generateArpMondeData(100), []);
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <DashboardView />;
-      case 'cases': return <CasesView />;
-      case 'reports': return <ReportsView />;
+      case 'dashboard': return <DashboardView cases={allCases} />;
+      case 'cases': return <CasesView cases={allCases} />;
+      case 'reports': return <ReportsView cases={allCases} />;
       case 'factures': return <PaginatedTableView title="Vérification des Factures" data={allFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
       case 'mairies': return <PaginatedTableView title="Répertoire des Mairies" data={allMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
       case 'jurisprudence': return <JurisprudenceView />;
       case 'arp': return <ArpView />;
       case 'settings': return <div>Paramètres</div>;
-      default: return <DashboardView />;
+      default: return <DashboardView cases={allCases}/>;
     }
   };
 
