@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, FunnelChart, Funnel, LabelList } from 'recharts';
 import { 
     LayoutDashboard, FolderKanban, BarChart3, Settings, Bell, UserCircle, Search, PlusCircle,
-    FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight
+    FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock
 } from 'lucide-react';
 
 // --- DATA GENERATION SCRIPT (EXPANDED) ---
@@ -190,8 +190,45 @@ const DashboardView = () => {
     const casesClosed = allCases.filter(c => c.resultat).length;
     const positiveResults = allCases.filter(c => c.resultat === 'Positif').length;
     const positiveRate = casesClosed > 0 ? ((positiveResults / casesClosed) * 100).toFixed(0) : 0;
+    
+    const StatCard = ({ title, value, icon: Icon, colorClass }) => (
+        <div className={`p-6 rounded-lg shadow-md text-white ${colorClass}`}>
+            <div className="flex justify-between items-start">
+                <div>
+                    <h3 className="text-sm font-medium opacity-80">{title}</h3>
+                    <p className="text-3xl font-bold">{value}</p>
+                </div>
+                <div className="bg-white/20 p-2 rounded-lg">
+                    <Icon size={24} />
+                </div>
+            </div>
+        </div>
+    );
+
     return (
-    <div><h2 className="text-3xl font-bold text-gray-800 mb-6">Vue d'ensemble</h2><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="text-gray-500 text-sm font-medium">Dossiers en cours</h3><p className="text-3xl font-bold text-gray-800">{casesInProgress}</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="text-gray-500 text-sm font-medium">Dossiers clôturés</h3><p className="text-3xl font-bold text-gray-800">{casesClosed}</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="text-gray-500 text-sm font-medium">Résultat Positif (global)</h3><p className="text-3xl font-bold text-gray-800">{positiveRate}%</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="text-gray-500 text-sm font-medium">Délai moyen d'enquête</h3><p className="text-3xl font-bold text-gray-800">28 jours</p></div></div><div className="mt-8 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Dossiers Récents</h3><ul>{allCases.slice(0, 5).map(c => (<li key={c.id} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0"><div><p className="font-semibold text-gray-700">{c.id} - {c.compagnie}</p><p className="text-sm text-gray-500">{c.nature} - {c.adresse}</p></div>{getResultPill(c.resultat)}</li>))}</ul></div></div>
+    <div>
+        <h2 className="text-3xl font-bold text-gray-800 mb-6">Vue d'ensemble</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard title="Dossiers en cours" value={casesInProgress} icon={FolderClock} colorClass="bg-blue-500" />
+            <StatCard title="Dossiers clôturés" value={casesClosed} icon={FolderCheck} colorClass="bg-green-500" />
+            <StatCard title="Résultat Positif (global)" value={`${positiveRate}%`} icon={Percent} colorClass="bg-purple-500" />
+            <StatCard title="Délai moyen d'enquête" value="28 jours" icon={Clock} colorClass="bg-orange-500" />
+        </div>
+        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+            <h3 className="font-bold text-gray-800 mb-4">Dossiers Récents</h3>
+            <ul>
+                {allCases.slice(0, 5).map(c => (
+                    <li key={c.id} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0">
+                        <div>
+                            <p className="font-semibold text-gray-700">{c.id} - {c.compagnie}</p>
+                            <p className="text-sm text-gray-500">{c.nature} - {c.adresse}</p>
+                        </div>
+                        {getResultPill(c.resultat)}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    </div>
   );
 }
 
