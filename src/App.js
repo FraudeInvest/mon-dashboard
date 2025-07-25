@@ -7,12 +7,24 @@ import {
 
 // --- DATA GENERATION SCRIPT (EXPANDED) ---
 const a_depts = [
-    { code: '75', name: 'Paris' }, { code: '13', name: 'Bouches-du-Rhône' }, { code: '69', name: 'Rhône' },
-    { code: '31', name: 'Haute-Garonne' }, { code: '06', name: 'Alpes-Maritimes' }, { code: '44', name: 'Loire-Atlantique' },
-    { code: '67', name: 'Bas-Rhin' }, { code: '34', name: 'Hérault' }, { code: '33', name: 'Gironde' },
-    { code: '59', name: 'Nord' }, { code: '35', name: 'Ille-et-Vilaine' }, { code: '51', name: 'Marne' },
-    { code: '76', name: 'Seine-Maritime' }, { code: '42', name: 'Loire' }, { code: '83', name: 'Var' },
-    { code: '38', name: 'Isère' }, { code: '21', name: 'Côte-d\'Or' }, { code: '49', name: 'Maine-et-Loire' }
+    { code: '75', name: 'Paris', fullName: 'Paris' }, 
+    { code: '13', name: 'B-du-R', fullName: 'Bouches-du-Rhône' }, 
+    { code: '69', name: 'Rhône', fullName: 'Rhône' },
+    { code: '31', name: 'H-Garonne', fullName: 'Haute-Garonne' }, 
+    { code: '06', name: 'A-Mar.', fullName: 'Alpes-Maritimes' }, 
+    { code: '44', name: 'L-Atl.', fullName: 'Loire-Atlantique' },
+    { code: '67', name: 'Bas-Rhin', fullName: 'Bas-Rhin' }, 
+    { code: '34', name: 'Hérault', fullName: 'Hérault' }, 
+    { code: '33', name: 'Gironde', fullName: 'Gironde' },
+    { code: '59', name: 'Nord', fullName: 'Nord' }, 
+    { code: '35', name: 'I-et-V.', fullName: 'Ille-et-Vilaine' }, 
+    { code: '51', name: 'Marne', fullName: 'Marne' },
+    { code: '76', name: 'S-Mar.', fullName: 'Seine-Maritime' }, 
+    { code: '42', name: 'Loire', fullName: 'Loire' }, 
+    { code: '83', name: 'Var', fullName: 'Var' },
+    { code: '38', name: 'Isère', fullName: 'Isère' }, 
+    { code: '21', name: 'Côte-d\'Or', fullName: 'Côte-d\'Or' }, 
+    { code: '49', name: 'M-et-L.', fullName: 'Maine-et-Loire' }
 ];
 const a_compagnies = ["AXA", "MAIF", "GMF", "Allianz", "Groupama", "MACIF", "Matmut", "Crédit Agricole Assurances"];
 const a_natures = ["Vol", "Cambriolage", "Incendie", "Accident de la circulation", "Assurance de personne", "Dégât des eaux"];
@@ -137,7 +149,7 @@ const FranceMap = ({ data }) => {
     }
 
     const maxIncidents = Math.max(...Object.values(incidentsByDept), 0);
-    const colorScale = window.d3.scaleSequential(window.d3.interpolateViridis).domain([0, maxIncidents || 1]);
+    const colorScale = window.d3.scaleSequential(window.d3.interpolateYlOrRd).domain([0, maxIncidents || 1]);
     const projection = window.d3.geoConicConformal().center([2.454071, 46.279229]).scale(2600).translate([450 / 2, 400 / 2]);
     const pathGenerator = window.d3.geoPath().projection(projection);
 
@@ -153,16 +165,28 @@ const FranceMap = ({ data }) => {
                     {geoData.features.map(dept => {
                         const deptCode = dept.properties.code;
                         const incidentCount = incidentsByDept[deptCode] || 0;
+                        const centroid = pathGenerator.centroid(dept);
                         return (
-                            <path
-                                key={dept.properties.code}
-                                d={pathGenerator(dept)}
-                                fill={incidentCount > 0 ? colorScale(incidentCount) : '#E5E7EB'}
-                                stroke="white"
-                                strokeWidth={0.5}
-                                onMouseMove={(e) => handleMouseMove(e, dept.properties.nom, incidentCount)}
-                                onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
-                            />
+                            <g key={dept.properties.code}>
+                                <path
+                                    d={pathGenerator(dept)}
+                                    fill={incidentCount > 0 ? colorScale(incidentCount) : '#E5E7EB'}
+                                    stroke="#fff"
+                                    strokeWidth={0.5}
+                                    onMouseMove={(e) => handleMouseMove(e, dept.properties.nom, incidentCount)}
+                                    onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
+                                />
+                                <text
+                                    x={centroid[0]}
+                                    y={centroid[1]}
+                                    textAnchor="middle"
+                                    alignmentBaseline="middle"
+                                    className="text-[5px] font-bold pointer-events-none"
+                                    fill={incidentCount > maxIncidents * 0.6 ? 'white' : 'black'}
+                                >
+                                    {dept.properties.code}
+                                </text>
+                            </g>
                         );
                     })}
                 </g>
