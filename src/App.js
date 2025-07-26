@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, FunnelChart, Funnel, LabelList, ScatterChart, Scatter, ZAxis } from 'recharts';
 import { 
     LayoutDashboard, FolderKanban, BarChart3, Settings, Bell, UserCircle, Search, PlusCircle, Upload, FileDown,
-    FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock, Sparkles, X, Info
+    FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock, Sparkles, X, Info,
+    Hash, Building, FileText, MapPin, Euro
 } from 'lucide-react';
 
 // --- DATA GENERATION SCRIPT (EXPANDED) ---
@@ -111,30 +112,7 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => 
 
 // --- MAP COMPONENT ---
 const FranceMap = ({ data }) => {
-    const [geoData, setGeoData] = useState(null);
     const [tooltip, setTooltip] = useState({ visible: false, content: '', x: 0, y: 0 });
-    const [isD3Loaded, setIsD3Loaded] = useState(!!window.d3);
-
-    useEffect(() => {
-        if (window.d3) {
-            setIsD3Loaded(true);
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = "https://d3js.org/d3.v7.min.js";
-        script.async = true;
-        script.onload = () => setIsD3Loaded(true);
-        script.onerror = () => console.error("D3.js script could not be loaded.");
-        document.body.appendChild(script);
-        return () => { if (document.body.contains(script)) document.body.removeChild(script); };
-    }, []);
-
-    useEffect(() => {
-        fetch('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson')
-            .then(response => response.json())
-            .then(data => setGeoData(data))
-            .catch(error => console.error("Could not load geojson data", error));
-    }, []);
 
     const incidentsByDept = useMemo(() => {
         return data.reduce((acc, c) => {
@@ -144,55 +122,50 @@ const FranceMap = ({ data }) => {
         }, {});
     }, [data]);
 
-    if (!isD3Loaded || !geoData) {
-        return <div className="h-[400px] flex items-center justify-center bg-gray-100 rounded-md"><p className="text-gray-500">Chargement de la carte...</p></div>;
-    }
-
     const maxIncidents = Math.max(...Object.values(incidentsByDept), 0);
-    const colorScale = window.d3.scaleSequential(window.d3.interpolateYlOrRd).domain([0, maxIncidents || 1]);
-    const projection = window.d3.geoConicConformal().center([2.454071, 46.279229]).scale(2600).translate([450 / 2, 400 / 2]);
-    const pathGenerator = window.d3.geoPath().projection(projection);
 
-    const handleMouseMove = (e, deptName, count) => {
-        const { left, top } = e.currentTarget.getBoundingClientRect();
-        setTooltip({ visible: true, content: `${deptName}: ${count || 0} sinistre(s)`, x: e.clientX - left + 20, y: e.clientY - top });
+    const interpolateColor = (color1, color2, factor) => {
+        let result = color1.slice();
+        for (let i = 0; i < 3; i++) {
+            result[i] = Math.round(result[i] + factor * (color2[i] - result[i]));
+        }
+        return result;
+    };
+
+    const getColor = (value) => {
+        if (value === 0) return '#E5E7EB';
+        const factor = value / (maxIncidents || 1);
+        const color = interpolateColor([255, 247, 188], [217, 95, 2], factor); // Yellow to Red
+        return `rgb(${color.join(',')})`;
+    };
+    
+    const handleMouseMove = (e, deptFullName, count) => {
+        setTooltip({ visible: true, content: `${deptFullName}: ${count || 0} sinistre(s)`, x: e.pageX, y: e.pageY });
     };
 
     return (
         <div className="relative">
-            <svg width="100%" height="400" viewBox="0 0 450 400">
-                <g>
-                    {geoData.features.map(dept => {
-                        const deptCode = dept.properties.code;
-                        const incidentCount = incidentsByDept[deptCode] || 0;
-                        const centroid = pathGenerator.centroid(dept);
-                        return (
-                            <g key={dept.properties.code}>
-                                <path
-                                    d={pathGenerator(dept)}
-                                    fill={incidentCount > 0 ? colorScale(incidentCount) : '#E5E7EB'}
-                                    stroke="#fff"
-                                    strokeWidth={0.5}
-                                    onMouseMove={(e) => handleMouseMove(e, dept.properties.nom, incidentCount)}
-                                    onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
-                                />
-                                <text
-                                    x={centroid[0]}
-                                    y={centroid[1]}
-                                    textAnchor="middle"
-                                    alignmentBaseline="middle"
-                                    className="text-[5px] font-bold pointer-events-none"
-                                    fill={incidentCount > maxIncidents * 0.6 ? 'white' : 'black'}
-                                >
-                                    {dept.properties.code}
-                                </text>
-                            </g>
-                        );
-                    })}
-                </g>
-            </svg>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1 p-2 bg-gray-100 rounded-lg">
+                {a_depts.map(dept => {
+                    const incidentCount = incidentsByDept[dept.code] || 0;
+                    const bgColor = getColor(incidentCount);
+                    const textColor = (incidentCount / (maxIncidents || 1)) > 0.6 ? 'white' : 'black';
+                    return (
+                        <div 
+                            key={dept.code}
+                            className="p-1 text-center rounded-md text-xs flex flex-col items-center justify-center aspect-square transition-transform duration-200 hover:scale-110"
+                            style={{ backgroundColor: bgColor, color: textColor }}
+                            onMouseMove={(e) => handleMouseMove(e, dept.fullName, incidentCount)}
+                            onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
+                        >
+                            <span className="text-[10px] sm:text-xs">{dept.name}</span>
+                            <span className="font-bold text-lg sm:text-xl">{incidentCount}</span>
+                        </div>
+                    )
+                })}
+            </div>
             {tooltip.visible && (
-                <div className="absolute bg-black/70 text-white p-2 rounded-md text-sm pointer-events-none" style={{ top: tooltip.y, left: tooltip.x }}>
+                <div className="absolute bg-black/70 text-white p-2 rounded-md text-sm pointer-events-none" style={{ top: tooltip.y - 30, left: tooltip.x + 10 }}>
                     {tooltip.content}
                 </div>
             )}
@@ -394,17 +367,19 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
         )}
         {isNewCaseModalOpen && (
              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+                <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
                     <div className="flex justify-between items-center border-b pb-3 mb-4">
                         <h3 className="text-xl font-bold text-gray-800">Nouveau Dossier</h3>
                         <button onClick={() => setIsNewCaseModalOpen(false)} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
                     </div>
-                    <form onSubmit={handleNewCaseSubmit} className="space-y-4">
-                        <div><label className="block text-sm font-medium text-gray-700">N° de Sinistre</label><input type="text" value={newCaseData.numSinistre} onChange={(e) => setNewCaseData({...newCaseData, numSinistre: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
-                        <div><label className="block text-sm font-medium text-gray-700">Compagnie</label><input type="text" value={newCaseData.compagnie} onChange={(e) => setNewCaseData({...newCaseData, compagnie: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
-                        <div><label className="block text-sm font-medium text-gray-700">Nature du Sinistre</label><input type="text" value={newCaseData.nature} onChange={(e) => setNewCaseData({...newCaseData, nature: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
-                        <div><label className="block text-sm font-medium text-gray-700">Adresse</label><input type="text" value={newCaseData.adresse} onChange={(e) => setNewCaseData({...newCaseData, adresse: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
-                        <div><label className="block text-sm font-medium text-gray-700">Montant</label><input type="number" value={newCaseData.montant} onChange={(e) => setNewCaseData({...newCaseData, montant: e.target.value})} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                    <form onSubmit={handleNewCaseSubmit} className="space-y-6 p-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="relative"><Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="N° de Sinistre" value={newCaseData.numSinistre} onChange={(e) => setNewCaseData({...newCaseData, numSinistre: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                            <div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Compagnie" value={newCaseData.compagnie} onChange={(e) => setNewCaseData({...newCaseData, compagnie: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                            <div className="relative"><FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Nature du Sinistre" value={newCaseData.nature} onChange={(e) => setNewCaseData({...newCaseData, nature: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                            <div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Adresse" value={newCaseData.adresse} onChange={(e) => setNewCaseData({...newCaseData, adresse: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                        </div>
+                        <div className="relative"><Euro className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="number" placeholder="Montant" value={newCaseData.montant} onChange={(e) => setNewCaseData({...newCaseData, montant: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
                         <div className="flex justify-end gap-2 pt-4"><button type="button" onClick={() => setIsNewCaseModalOpen(false)} className="py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Annuler</button><button type="submit" className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Ajouter</button></div>
                     </form>
                 </div>
@@ -548,7 +523,7 @@ const JurisprudenceView = () => (
     <div><h2 className="text-3xl font-bold text-gray-800 mb-6">Jurisprudence</h2><div className="space-y-6"><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.2, 14 juin 2012, n°11-22.097</h3><p className="mt-2 text-gray-600">Rapport d’enquête reconnu comme preuve de fraude.</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.1, 10 septembre 2014, n°13-22612</h3><p className="mt-2 text-gray-600">Vie privée et usage des détectives privés.</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.1, 31 octobre 2012, n°11-17.476</h3><p className="mt-2 text-gray-600">Filature légitime dans le cadre d’enquête assurance.</p></div></div></div>
 );
 
-const ArpView = ({ allArpFrance, allArpMonde }) => {
+const ArpView = () => {
     const [arpTab, setArpTab] = useState('france');
     return (
         <div><h2 className="text-3xl font-bold text-gray-800 mb-6">ARP (Analyse Risques Particuliers)</h2><div className="flex border-b border-gray-200 mb-4"><button onClick={() => setArpTab('france')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'france' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>France</button><button onClick={() => setArpTab('monde')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'monde' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>Monde</button></div>
@@ -587,7 +562,7 @@ export default function App() {
       case 'factures': return <PaginatedTableView title="Vérification des Factures" data={allFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
       case 'mairies': return <PaginatedTableView title="Répertoire des Mairies" data={allMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
       case 'jurisprudence': return <JurisprudenceView />;
-      case 'arp': return <ArpView allArpFrance={allArpFrance} allArpMonde={allArpMonde} />;
+      case 'arp': return <ArpView />;
       case 'settings': return <div>Paramètres</div>;
       default: return <DashboardView cases={allCases}/>;
     }
@@ -600,7 +575,16 @@ export default function App() {
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
       <nav className="w-72 bg-gray-800 text-white flex flex-col p-4">
-        <div className="flex items-center mb-8"><svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg><h1 className="text-xl font-bold ml-2">Fraude Invest.</h1></div>
+        <div className="p-4 mb-8 text-center">
+            <h1 className="text-4xl font-bold tracking-wider text-white">
+                <span>A</span>
+                <span className="text-blue-400">P</span>
+                <span className="text-gray-400">I</span>
+                <span className="text-red-500">S</span>
+                <span>33</span>
+            </h1>
+            <p className="text-sm font-light tracking-[0.3em] text-gray-300 mt-1">— AGENCE —</p>
+        </div>
         <div className="flex-grow space-y-2">
           <NavLink id="dashboard" icon={LayoutDashboard} label="Vue d'ensemble" /><NavLink id="cases" icon={FolderKanban} label="Gestion des Dossiers" /><NavLink id="reports" icon={BarChart3} label="Analyse & Rapports" /><hr className="my-2 border-gray-700"/><NavLink id="factures" icon={FileCheck} label="Vérif. Factures" /><NavLink id="mairies" icon={Landmark} label="Mairies" /><NavLink id="jurisprudence" icon={Gavel} label="Jurisprudence" /><NavLink id="arp" icon={Globe} label="ARP" />
         </div>
