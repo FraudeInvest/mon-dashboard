@@ -523,7 +523,7 @@ const JurisprudenceView = () => (
     <div><h2 className="text-3xl font-bold text-gray-800 mb-6">Jurisprudence</h2><div className="space-y-6"><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.2, 14 juin 2012, n°11-22.097</h3><p className="mt-2 text-gray-600">Rapport d’enquête reconnu comme preuve de fraude.</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.1, 10 septembre 2014, n°13-22612</h3><p className="mt-2 text-gray-600">Vie privée et usage des détectives privés.</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.1, 31 octobre 2012, n°11-17.476</h3><p className="mt-2 text-gray-600">Filature légitime dans le cadre d’enquête assurance.</p></div></div></div>
 );
 
-const ArpView = () => {
+const ArpView = ({ allArpFrance, allArpMonde }) => {
     const [arpTab, setArpTab] = useState('france');
     return (
         <div><h2 className="text-3xl font-bold text-gray-800 mb-6">ARP (Analyse Risques Particuliers)</h2><div className="flex border-b border-gray-200 mb-4"><button onClick={() => setArpTab('france')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'france' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>France</button><button onClick={() => setArpTab('monde')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'monde' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>Monde</button></div>
@@ -562,7 +562,7 @@ export default function App() {
       case 'factures': return <PaginatedTableView title="Vérification des Factures" data={allFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
       case 'mairies': return <PaginatedTableView title="Répertoire des Mairies" data={allMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
       case 'jurisprudence': return <JurisprudenceView />;
-      case 'arp': return <ArpView />;
+      case 'arp': return <ArpView allArpFrance={allArpFrance} allArpMonde={allArpMonde} />;
       case 'settings': return <div>Paramètres</div>;
       default: return <DashboardView cases={allCases}/>;
     }
