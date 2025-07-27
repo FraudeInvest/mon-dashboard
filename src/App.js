@@ -114,15 +114,21 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => 
 const FranceMap = ({ data }) => {
     const [tooltip, setTooltip] = useState({ visible: false, content: '', x: 0, y: 0 });
 
-    const incidentsByDept = useMemo(() => {
+    const statsByDept = useMemo(() => {
         return data.reduce((acc, c) => {
             const code = c.departmentCode;
-            if (code) acc[code] = (acc[code] || 0) + 1;
+            if (code) {
+                if (!acc[code]) {
+                    acc[code] = { count: 0, totalAmount: 0 };
+                }
+                acc[code].count += 1;
+                acc[code].totalAmount += c.montant;
+            }
             return acc;
         }, {});
     }, [data]);
 
-    const maxIncidents = Math.max(...Object.values(incidentsByDept), 0);
+    const maxIncidents = Math.max(...Object.values(statsByDept).map(d => d.count), 0);
 
     const interpolateColor = (color1, color2, factor) => {
         let result = color1.slice();
@@ -139,27 +145,28 @@ const FranceMap = ({ data }) => {
         return `rgb(${color.join(',')})`;
     };
     
-    const handleMouseMove = (e, deptFullName, count) => {
-        setTooltip({ visible: true, content: `${deptFullName}: ${count || 0} sinistre(s)`, x: e.pageX, y: e.pageY });
+    const handleMouseMove = (e, deptFullName, stats) => {
+        const content = `${deptFullName}: ${stats.count || 0} sinistre(s) - ${stats.totalAmount ? stats.totalAmount.toLocaleString('fr-FR') : 0} €`;
+        setTooltip({ visible: true, content, x: e.pageX, y: e.pageY });
     };
 
     return (
         <div className="relative">
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-1 p-2 bg-gray-100 rounded-lg">
                 {a_depts.map(dept => {
-                    const incidentCount = incidentsByDept[dept.code] || 0;
-                    const bgColor = getColor(incidentCount);
-                    const textColor = (incidentCount / (maxIncidents || 1)) > 0.6 ? 'white' : 'black';
+                    const stats = statsByDept[dept.code] || { count: 0, totalAmount: 0 };
+                    const bgColor = getColor(stats.count);
+                    const textColor = (stats.count / (maxIncidents || 1)) > 0.6 ? 'white' : 'black';
                     return (
                         <div 
                             key={dept.code}
                             className="p-1 text-center rounded-md text-xs flex flex-col items-center justify-center aspect-square transition-transform duration-200 hover:scale-110"
                             style={{ backgroundColor: bgColor, color: textColor }}
-                            onMouseMove={(e) => handleMouseMove(e, dept.fullName, incidentCount)}
+                            onMouseMove={(e) => handleMouseMove(e, dept.fullName, stats)}
                             onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
                         >
-                            <span className="text-[10px] sm:text-xs">{dept.name}</span>
-                            <span className="font-bold text-lg sm:text-xl">{incidentCount}</span>
+                            <span className="font-bold text-lg sm:text-xl">{stats.count}</span>
+                            <span className="text-[10px] sm:text-xs font-semibold">{Math.round(stats.totalAmount / 1000)}k€</span>
                         </div>
                     )
                 })}
@@ -523,7 +530,7 @@ const JurisprudenceView = () => (
     <div><h2 className="text-3xl font-bold text-gray-800 mb-6">Jurisprudence</h2><div className="space-y-6"><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.2, 14 juin 2012, n°11-22.097</h3><p className="mt-2 text-gray-600">Rapport d’enquête reconnu comme preuve de fraude.</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.1, 10 septembre 2014, n°13-22612</h3><p className="mt-2 text-gray-600">Vie privée et usage des détectives privés.</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.1, 31 octobre 2012, n°11-17.476</h3><p className="mt-2 text-gray-600">Filature légitime dans le cadre d’enquête assurance.</p></div></div></div>
 );
 
-const ArpView = ({ allArpFrance, allArpMonde }) => {
+const ArpView = () => {
     const [arpTab, setArpTab] = useState('france');
     return (
         <div><h2 className="text-3xl font-bold text-gray-800 mb-6">ARP (Analyse Risques Particuliers)</h2><div className="flex border-b border-gray-200 mb-4"><button onClick={() => setArpTab('france')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'france' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>France</button><button onClick={() => setArpTab('monde')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'monde' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>Monde</button></div>
@@ -562,7 +569,7 @@ export default function App() {
       case 'factures': return <PaginatedTableView title="Vérification des Factures" data={allFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
       case 'mairies': return <PaginatedTableView title="Répertoire des Mairies" data={allMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
       case 'jurisprudence': return <JurisprudenceView />;
-      case 'arp': return <ArpView allArpFrance={allArpFrance} allArpMonde={allArpMonde} />;
+      case 'arp': return <ArpView />;
       case 'settings': return <div>Paramètres</div>;
       default: return <DashboardView cases={allCases}/>;
     }
