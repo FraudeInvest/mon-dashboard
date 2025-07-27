@@ -112,9 +112,32 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => 
 
 // --- MAP COMPONENT ---
 const FranceMap = ({ data }) => {
+    const [geoData, setGeoData] = useState(null);
     const [tooltip, setTooltip] = useState({ visible: false, content: '', x: 0, y: 0 });
+    const [isD3Loaded, setIsD3Loaded] = useState(!!window.d3);
 
-    const statsByDept = useMemo(() => {
+    useEffect(() => {
+        if (window.d3) {
+            setIsD3Loaded(true);
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = "https://d3js.org/d3.v7.min.js";
+        script.async = true;
+        script.onload = () => setIsD3Loaded(true);
+        script.onerror = () => console.error("D3.js script could not be loaded.");
+        document.body.appendChild(script);
+        return () => { if (document.body.contains(script)) document.body.removeChild(script); };
+    }, []);
+
+    useEffect(() => {
+        fetch('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson')
+            .then(response => response.json())
+            .then(data => setGeoData(data))
+            .catch(error => console.error("Could not load geojson data", error));
+    }, []);
+
+    const incidentsByDept = useMemo(() => {
         return data.reduce((acc, c) => {
             const code = c.departmentCode;
             if (code) {
@@ -128,49 +151,53 @@ const FranceMap = ({ data }) => {
         }, {});
     }, [data]);
 
-    const maxIncidents = Math.max(...Object.values(statsByDept).map(d => d.count), 0);
+    if (!isD3Loaded || !geoData) {
+        return <div className="h-[400px] flex items-center justify-center bg-gray-100 rounded-md"><p className="text-gray-500">Chargement de la carte...</p></div>;
+    }
 
-    const interpolateColor = (color1, color2, factor) => {
-        let result = color1.slice();
-        for (let i = 0; i < 3; i++) {
-            result[i] = Math.round(result[i] + factor * (color2[i] - result[i]));
-        }
-        return result;
-    };
+    const maxIncidents = Math.max(...Object.values(incidentsByDept).map(d => d.count), 0);
+    const colorScale = window.d3.scaleSequential(window.d3.interpolateYlOrRd).domain([0, maxIncidents || 1]);
+    const projection = window.d3.geoConicConformal().center([2.454071, 46.279229]).scale(2600).translate([450 / 2, 400 / 2]);
+    const pathGenerator = window.d3.geoPath().projection(projection);
 
-    const getColor = (value) => {
-        if (value === 0) return '#E5E7EB';
-        const factor = value / (maxIncidents || 1);
-        const color = interpolateColor([255, 247, 188], [217, 95, 2], factor); // Yellow to Red
-        return `rgb(${color.join(',')})`;
-    };
-    
-    const handleMouseMove = (e, deptFullName, stats) => {
-        const content = `${deptFullName}: ${stats.count || 0} sinistre(s) - ${stats.totalAmount ? stats.totalAmount.toLocaleString('fr-FR') : 0} €`;
+    const handleMouseMove = (e, deptName, stats) => {
+        const content = `${deptName}: ${stats.count || 0} sinistre(s) - ${stats.totalAmount ? stats.totalAmount.toLocaleString('fr-FR') : 0} €`;
         setTooltip({ visible: true, content, x: e.pageX, y: e.pageY });
     };
 
     return (
         <div className="relative">
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1 p-2 bg-gray-100 rounded-lg">
-                {a_depts.map(dept => {
-                    const stats = statsByDept[dept.code] || { count: 0, totalAmount: 0 };
-                    const bgColor = getColor(stats.count);
-                    const textColor = (stats.count / (maxIncidents || 1)) > 0.6 ? 'white' : 'black';
-                    return (
-                        <div 
-                            key={dept.code}
-                            className="p-1 text-center rounded-md text-xs flex flex-col items-center justify-center aspect-square transition-transform duration-200 hover:scale-110"
-                            style={{ backgroundColor: bgColor, color: textColor }}
-                            onMouseMove={(e) => handleMouseMove(e, dept.fullName, stats)}
-                            onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
-                        >
-                            <span className="font-bold text-lg sm:text-xl">{stats.count}</span>
-                            <span className="text-[10px] sm:text-xs font-semibold">{Math.round(stats.totalAmount / 1000)}k€</span>
-                        </div>
-                    )
-                })}
-            </div>
+            <svg width="100%" height="400" viewBox="0 0 450 400">
+                <g>
+                    {geoData.features.map(dept => {
+                        const deptCode = dept.properties.code;
+                        const stats = incidentsByDept[deptCode] || { count: 0, totalAmount: 0 };
+                        const centroid = pathGenerator.centroid(dept);
+                        return (
+                            <g key={dept.properties.code}>
+                                <path
+                                    d={pathGenerator(dept)}
+                                    fill={stats.count > 0 ? colorScale(stats.count) : '#E5E7EB'}
+                                    stroke="#fff"
+                                    strokeWidth={0.5}
+                                    onMouseMove={(e) => handleMouseMove(e, dept.properties.nom, stats)}
+                                    onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
+                                />
+                                <text
+                                    x={centroid[0]}
+                                    y={centroid[1]}
+                                    textAnchor="middle"
+                                    alignmentBaseline="middle"
+                                    className="text-[5px] font-bold pointer-events-none"
+                                    fill={stats.count > maxIncidents * 0.6 ? 'white' : 'black'}
+                                >
+                                    {dept.properties.code}
+                                </text>
+                            </g>
+                        );
+                    })}
+                </g>
+            </svg>
             {tooltip.visible && (
                 <div className="absolute bg-black/70 text-white p-2 rounded-md text-sm pointer-events-none" style={{ top: tooltip.y - 30, left: tooltip.x + 10 }}>
                     {tooltip.content}
