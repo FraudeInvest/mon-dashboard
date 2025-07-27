@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { 
     LayoutDashboard, FolderKanban, BarChart3, Settings, Bell, UserCircle, Search, PlusCircle, Upload, FileDown,
     FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock, Sparkles, X, Info,
-    Hash, Building, FileText, MapPin, Euro
+    Hash, Building, FileText, MapPin, Euro, ChevronDown, Edit, Trash2
 } from 'lucide-react';
 
 // --- DATA GENERATION SCRIPT (EXPANDED) ---
@@ -112,30 +112,7 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => 
 
 // --- MAP COMPONENT ---
 const FranceMap = ({ data }) => {
-    const [geoData, setGeoData] = useState(null);
     const [tooltip, setTooltip] = useState({ visible: false, content: '', x: 0, y: 0 });
-    const [isD3Loaded, setIsD3Loaded] = useState(!!window.d3);
-
-    useEffect(() => {
-        if (window.d3) {
-            setIsD3Loaded(true);
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = "https://d3js.org/d3.v7.min.js";
-        script.async = true;
-        script.onload = () => setIsD3Loaded(true);
-        script.onerror = () => console.error("D3.js script could not be loaded.");
-        document.body.appendChild(script);
-        return () => { if (document.body.contains(script)) document.body.removeChild(script); };
-    }, []);
-
-    useEffect(() => {
-        fetch('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson')
-            .then(response => response.json())
-            .then(data => setGeoData(data))
-            .catch(error => console.error("Could not load geojson data", error));
-    }, []);
 
     const incidentsByDept = useMemo(() => {
         return data.reduce((acc, c) => {
@@ -151,53 +128,48 @@ const FranceMap = ({ data }) => {
         }, {});
     }, [data]);
 
-    if (!isD3Loaded || !geoData) {
-        return <div className="h-[500px] flex items-center justify-center bg-gray-100 rounded-md"><p className="text-gray-500">Chargement de la carte...</p></div>;
-    }
-
     const maxIncidents = Math.max(...Object.values(incidentsByDept).map(d => d.count), 0);
-    const colorScale = window.d3.scaleSequential(window.d3.interpolateYlOrRd).domain([0, maxIncidents || 1]);
-    const projection = window.d3.geoConicConformal().center([2.454071, 46.279229]).scale(3000).translate([550 / 2, 500 / 2]);
-    const pathGenerator = window.d3.geoPath().projection(projection);
 
-    const handleMouseMove = (e, deptName, stats) => {
-        const content = `${deptName}: ${stats.count || 0} sinistre(s) - ${stats.totalAmount ? stats.totalAmount.toLocaleString('fr-FR') : 0} €`;
-        setTooltip({ visible: true, content, x: e.pageX, y: e.pageY });
+    const interpolateColor = (color1, color2, factor) => {
+        let result = color1.slice();
+        for (let i = 0; i < 3; i++) {
+            result[i] = Math.round(result[i] + factor * (color2[i] - result[i]));
+        }
+        return result;
+    };
+
+    const getColor = (value) => {
+        if (value === 0) return '#E5E7EB';
+        const factor = value / (maxIncidents || 1);
+        const color = interpolateColor([199, 210, 254], [30, 58, 138], factor);
+        return `rgb(${color.join(',')})`;
+    };
+    
+    const handleMouseMove = (e, deptFullName, stats) => {
+        setTooltip({ visible: true, content: `${deptFullName}: ${stats.count || 0} sinistre(s) - ${stats.totalAmount ? stats.totalAmount.toLocaleString('fr-FR') : 0} €`, x: e.pageX, y: e.pageY });
     };
 
     return (
         <div className="relative">
-            <svg width="100%" height="500" viewBox="0 0 550 500">
-                <g>
-                    {geoData.features.map(dept => {
-                        const deptCode = dept.properties.code;
-                        const stats = incidentsByDept[deptCode] || { count: 0, totalAmount: 0 };
-                        const centroid = pathGenerator.centroid(dept);
-                        return (
-                            <g key={dept.properties.code}>
-                                <path
-                                    d={pathGenerator(dept)}
-                                    fill={stats.count > 0 ? colorScale(stats.count) : '#E5E7EB'}
-                                    stroke="#fff"
-                                    strokeWidth={0.5}
-                                    onMouseMove={(e) => handleMouseMove(e, dept.properties.nom, stats)}
-                                    onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
-                                />
-                                <text
-                                    x={centroid[0]}
-                                    y={centroid[1]}
-                                    textAnchor="middle"
-                                    alignmentBaseline="middle"
-                                    className="text-[6px] font-bold pointer-events-none"
-                                    fill={stats.count > maxIncidents * 0.6 ? 'white' : 'black'}
-                                >
-                                    {dept.properties.code}
-                                </text>
-                            </g>
-                        );
-                    })}
-                </g>
-            </svg>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1 p-2 bg-gray-100 rounded-lg">
+                {a_depts.map(dept => {
+                    const stats = incidentsByDept[dept.code] || { count: 0, totalAmount: 0 };
+                    const bgColor = getColor(stats.count);
+                    const textColor = (stats.count / (maxIncidents || 1)) > 0.5 ? 'white' : 'black';
+                    return (
+                        <div 
+                            key={dept.code}
+                            className="p-1 text-center rounded-md text-xs flex flex-col items-center justify-center aspect-square transition-transform duration-200 hover:scale-110"
+                            style={{ backgroundColor: bgColor, color: textColor }}
+                            onMouseMove={(e) => handleMouseMove(e, dept.fullName, stats)}
+                            onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
+                        >
+                            <span className="text-[10px] sm:text-xs">{dept.name}</span>
+                            <span className="font-bold text-lg sm:text-xl">{stats.count}</span>
+                        </div>
+                    )
+                })}
+            </div>
             {tooltip.visible && (
                 <div className="absolute bg-black/70 text-white p-2 rounded-md text-sm pointer-events-none" style={{ top: tooltip.y - 30, left: tooltip.x + 10 }}>
                     {tooltip.content}
@@ -279,16 +251,57 @@ const callGeminiAPI = (caseData) => {
 const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
+    
+    const [selectedIds, setSelectedIds] = useState([]);
     const paginatedData = cases.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
     const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
     const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
+    const [editingCase, setEditingCase] = useState(null);
     const [selectedCase, setSelectedCase] = useState(null);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [newCaseData, setNewCaseData] = useState({
         numSinistre: '', compagnie: '', nature: '', adresse: '', montant: ''
     });
+    
+    useEffect(() => {
+        if(editingCase) {
+            setNewCaseData(editingCase);
+            setIsNewCaseModalOpen(true);
+        }
+    }, [editingCase]);
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedIds(paginatedData.map(c => c.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleSelectOne = (e, id) => {
+        if (e.target.checked) {
+            setSelectedIds([...selectedIds, id]);
+        } else {
+            setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+        }
+    };
+
+    const handleDeleteSelected = () => {
+        setCases(cases.filter(c => !selectedIds.includes(c.id)));
+        setNotification({type: 'success', message: `${selectedIds.length} dossier(s) supprimé(s).`});
+        setSelectedIds([]);
+    };
+
+    const handleDeleteOne = (id) => {
+        setCases(cases.filter(c => c.id !== id));
+        setNotification({type: 'success', message: `Dossier ${id} supprimé.`});
+    };
+
+    const handleEditClick = (caseItem) => {
+        setEditingCase(caseItem);
+    };
 
     useEffect(() => {
         if (selectedCase) {
@@ -312,21 +325,29 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
         setAnalysisResult(null);
     };
     
-    const handleNewCaseSubmit = (e) => {
+    const handleCaseSubmit = (e) => {
         e.preventDefault();
-        const newId = `2025-${String(cases.length + 1).padStart(3, '0')}`;
-        const newCase = {
-            ...newCaseData,
-            id: newId,
-            dateSaisine: new Date().toISOString().split('T')[0],
-            montant: Number(newCaseData.montant),
-            departmentCode: getRandom(a_depts).code,
-            dateCloture: null,
-            resultat: null,
-        };
-        setCases([newCase, ...cases]);
-        setNotification({type: 'success', message: `Dossier ${newId} ajouté avec succès.`});
+        if (editingCase) {
+            // Update existing case
+            setCases(cases.map(c => c.id === editingCase.id ? { ...c, ...newCaseData, montant: Number(newCaseData.montant) } : c));
+            setNotification({type: 'success', message: `Dossier ${editingCase.id} mis à jour.`});
+        } else {
+            // Add new case
+            const newId = `2025-${String(cases.length + 1).padStart(3, '0')}`;
+            const newCase = {
+                ...newCaseData,
+                id: newId,
+                dateSaisine: new Date().toISOString().split('T')[0],
+                montant: Number(newCaseData.montant),
+                departmentCode: getRandom(a_depts).code,
+                dateCloture: null,
+                resultat: null,
+            };
+            setCases([newCase, ...cases]);
+            setNotification({type: 'success', message: `Dossier ${newId} ajouté.`});
+        }
         setIsNewCaseModalOpen(false);
+        setEditingCase(null);
         setNewCaseData({ numSinistre: '', compagnie: '', nature: '', adresse: '', montant: '' });
     };
 
@@ -403,10 +424,10 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
                     <div className="flex justify-between items-center border-b pb-3 mb-4">
-                        <h3 className="text-xl font-bold text-gray-800">Nouveau Dossier</h3>
-                        <button onClick={() => setIsNewCaseModalOpen(false)} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
+                        <h3 className="text-xl font-bold text-gray-800">{editingCase ? `Modifier le Dossier ${editingCase.id}` : 'Nouveau Dossier'}</h3>
+                        <button onClick={() => { setIsNewCaseModalOpen(false); setEditingCase(null); }} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
                     </div>
-                    <form onSubmit={handleNewCaseSubmit} className="space-y-6 p-2">
+                    <form onSubmit={handleCaseSubmit} className="space-y-6 p-2">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="relative"><Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="N° de Sinistre" value={newCaseData.numSinistre} onChange={(e) => setNewCaseData({...newCaseData, numSinistre: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
                             <div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Compagnie" value={newCaseData.compagnie} onChange={(e) => setNewCaseData({...newCaseData, compagnie: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
@@ -414,7 +435,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                             <div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Adresse" value={newCaseData.adresse} onChange={(e) => setNewCaseData({...newCaseData, adresse: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
                         </div>
                         <div className="relative"><Euro className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="number" placeholder="Montant" value={newCaseData.montant} onChange={(e) => setNewCaseData({...newCaseData, montant: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
-                        <div className="flex justify-end gap-2 pt-4"><button type="button" onClick={() => setIsNewCaseModalOpen(false)} className="py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Annuler</button><button type="submit" className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Ajouter</button></div>
+                        <div className="flex justify-end gap-2 pt-4"><button type="button" onClick={() => { setIsNewCaseModalOpen(false); setEditingCase(null); }} className="py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Annuler</button><button type="submit" className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{editingCase ? 'Enregistrer' : 'Ajouter'}</button></div>
                     </form>
                 </div>
             </div>
@@ -426,13 +447,11 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                     <h2 className="text-3xl font-bold text-gray-800">Gestion des Dossiers</h2>
                 </div>
                  <div className="flex items-center gap-2">
-                     <label htmlFor="file-upload" className={`cursor-pointer flex items-center gap-2 bg-orange-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-orange-600 transition ${!isXlsxLoaded && 'opacity-50 cursor-not-allowed'}`}>
-                        <Upload size={20}/> Importer
-                    </label>
-                    <input id="file-upload" type="file" className="hidden" onChange={handleFileUpload} accept=".xlsx, .xls, .csv" disabled={!isXlsxLoaded}/>
-                    <button onClick={handleExport} className={`flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition ${!isXlsxLoaded && 'opacity-50 cursor-not-allowed'}`} disabled={!isXlsxLoaded}>
-                        <FileDown size={20}/> Exporter
-                    </button>
+                    {selectedIds.length > 0 && (
+                        <button onClick={handleDeleteSelected} className="flex items-center gap-2 bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition">
+                            <Trash2 size={20}/> Supprimer ({selectedIds.length})
+                        </button>
+                    )}
                     <button onClick={() => setIsNewCaseModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
                         <PlusCircle size={20}/> Nouveau Dossier
                     </button>
@@ -443,28 +462,27 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                     <table className="w-full text-left">
                         <thead className="bg-blue-100">
                             <tr>
+                                <th className="p-4 w-12"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === paginatedData.length && paginatedData.length > 0} className="form-checkbox h-5 w-5 text-blue-600 rounded" /></th>
                                 <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">N° Dossier</th>
                                 <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Compagnie</th>
                                 <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Nature Sinistre</th>
                                 <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Montant</th>
                                 <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Résultat</th>
                                 <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Actions</th>
-                                <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Analyse IA</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedData.map((c) => (
-                                <tr key={c.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                <tr key={c.id} className={`border-b border-gray-200 ${selectedIds.includes(c.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                                    <td className="p-4"><input type="checkbox" checked={selectedIds.includes(c.id)} onChange={(e) => handleSelectOne(e, c.id)} className="form-checkbox h-5 w-5 text-blue-600 rounded" /></td>
                                     <td className="p-4 font-medium text-gray-800">{c.id}</td>
                                     <td className="p-4 text-gray-600">{c.compagnie}</td>
                                     <td className="p-4 text-gray-600">{c.nature}</td>
                                     <td className="p-4 text-gray-600">{c.montant.toLocaleString('fr-FR')} €</td>
                                     <td className="p-4">{getResultPill(c.resultat)}</td>
-                                    <td className="p-4"><button className="text-blue-600 hover:underline">Voir</button></td>
-                                    <td className="p-4">
-                                        <button onClick={() => handleAnalyseClick(c)} className="flex items-center gap-1 text-sm bg-purple-100 text-purple-700 font-semibold py-1 px-2 rounded-lg hover:bg-purple-200 transition">
-                                            <Sparkles size={14}/> Analyser
-                                        </button>
+                                    <td className="p-4 flex items-center gap-2">
+                                        <button onClick={() => handleEditClick(c)} className="text-blue-600 hover:text-blue-800"><Edit size={18}/></button>
+                                        <button onClick={() => handleDeleteOne(c.id)} className="text-red-600 hover:text-red-800"><Trash2 size={18}/></button>
                                     </td>
                                 </tr>
                             ))}
@@ -552,9 +570,59 @@ const PaginatedTableView = ({ title, data, columns }) => {
     );
 };
 
-const JurisprudenceView = () => (
-    <div><h2 className="text-3xl font-bold text-gray-800 mb-6">Jurisprudence</h2><div className="space-y-6"><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.2, 14 juin 2012, n°11-22.097</h3><p className="mt-2 text-gray-600">Rapport d’enquête reconnu comme preuve de fraude.</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.1, 10 septembre 2014, n°13-22612</h3><p className="mt-2 text-gray-600">Vie privée et usage des détectives privés.</p></div><div className="bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-lg text-gray-800">Cass. Civ.1, 31 octobre 2012, n°11-17.476</h3><p className="mt-2 text-gray-600">Filature légitime dans le cadre d’enquête assurance.</p></div></div></div>
-);
+const JurisprudenceView = () => {
+    const [openItem, setOpenItem] = useState(null);
+    const jurisprudenceData = [
+        {
+            category: "Recevabilité de la Preuve",
+            cases: [
+                { ref: "Cass. Civ.2, 14 juin 2012, n°11-22.097", principle: "Le rapport d'enquête privée est recevable comme preuve.", implication: "Les rapports produits sont des éléments de preuve légitimes pour démontrer une fraude, à condition que l'enquête ait été menée de manière légale." },
+                { ref: "Cass. Soc, 6 décembre 2007, n°06-43.797", principle: "La filature organisée par un employeur pour contrôler un salarié est un moyen de preuve illicite.", implication: "La surveillance doit être justifiée et proportionnée, et ne peut pas constituer une atteinte disproportionnée à la vie privée, même dans un contexte de suspicion de fraude." }
+            ]
+        },
+        {
+            category: "Atteinte à la Vie Privée",
+            cases: [
+                { ref: "Cass. Civ.1, 10 septembre 2014, n°13-22612", principle: "Le droit à la preuve ne peut justifier la production d'éléments portant atteinte à la vie privée.", implication: "Toute investigation doit respecter scrupuleusement la vie privée de la personne enquêtée. Les informations collectées dans des lieux privés sans consentement sont irrecevables." },
+                { ref: "Cass. Civ.2, 5 novembre 2015, n°14-19.092", principle: "L'utilisation de photographies issues d'un compte Facebook privé, sans le consentement de l'intéressé, porte atteinte à la vie privée.", implication: "La collecte d'informations sur les réseaux sociaux doit se limiter aux profils et publications publics. L'accès à des contenus restreints est illégal." }
+            ]
+        }
+    ];
+
+    return (
+        <div>
+            <div className="flex items-center gap-3 mb-6">
+                <Gavel className="text-gray-700" size={32} />
+                <h2 className="text-3xl font-bold text-gray-800">Jurisprudence</h2>
+            </div>
+            <div className="space-y-4">
+                {jurisprudenceData.map((category, catIndex) => (
+                    <div key={catIndex} className="bg-white rounded-lg shadow-md overflow-hidden">
+                        <h3 className="text-xl font-bold text-gray-800 p-4 bg-gray-50">{category.category}</h3>
+                        <div className="divide-y">
+                            {category.cases.map((item, itemIndex) => (
+                                <div key={itemIndex}>
+                                    <button onClick={() => setOpenItem(openItem === `${catIndex}-${itemIndex}` ? null : `${catIndex}-${itemIndex}`)} className="w-full flex justify-between items-center p-4 text-left font-semibold text-blue-800 hover:bg-blue-50">
+                                        <span>{item.ref}</span>
+                                        <ChevronDown className={`transform transition-transform ${openItem === `${catIndex}-${itemIndex}` ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    {openItem === `${catIndex}-${itemIndex}` && (
+                                        <div className="p-4 bg-gray-50 text-sm">
+                                            <p className="font-bold text-gray-700">Principe :</p>
+                                            <p className="mb-2 text-gray-600">{item.principle}</p>
+                                            <p className="font-bold text-gray-700">Implication pratique :</p>
+                                            <p className="text-gray-600">{item.implication}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 const ArpView = ({ allArpFrance, allArpMonde }) => {
     const [arpTab, setArpTab] = useState('france');
@@ -606,8 +674,8 @@ export default function App() {
   const notifBgColor = notification.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
-      <nav className="w-72 bg-gray-800 text-white flex flex-col p-4">
+    <div className="flex h-screen bg-white font-sans">
+      <nav className="w-72 bg-gradient-to-b from-blue-900 to-gray-800 text-white flex flex-col p-4">
         <div className="p-4 mb-8 text-center">
             <h1 className="text-4xl font-bold tracking-wider text-white">
                 <span>A</span>
@@ -623,7 +691,7 @@ export default function App() {
         </div>
         <div><NavLink id="settings" icon={Settings} label="Paramètres" /></div>
       </nav>
-      <main className="flex-1 flex flex-col relative">
+      <main className="flex-1 flex flex-col relative bg-gray-50">
         {notification.message && (
             <div className={`absolute top-4 right-4 ${notifBgColor} px-4 py-3 rounded-lg shadow-lg flex items-center z-50`}>
                 <Info size={20} className="mr-3"/>
