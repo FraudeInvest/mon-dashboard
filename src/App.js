@@ -452,6 +452,38 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                             <Trash2 size={20}/> Supprimer ({selectedIds.length})
                         </button>
                     )}
+
+                    {/* Bouton Importer (Encadré Vert) */}
+                    <label className="flex items-center gap-2 border-2 border-green-500 text-green-700 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-50 transition cursor-pointer">
+                      <Upload size={20} />
+                      Importer
+                      <input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Bouton Exporter (Encadré Rouge) */}
+                    <button
+                      onClick={handleExport}
+                      className="flex items-center gap-2 border-2 border-red-500 text-red-700 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-50 transition"
+                    >
+                      <FileDown size={20} />
+                      Exporter
+                    </button>
+
+                    {/* Bouton Nouveau Dossier */}
+                    <button
+                      onClick={() => setIsNewCaseModalOpen(true)}
+                      className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition"
+                    >
+                     <PlusCircle size={20} />
+                     Nouveau Dossier
+                    </button>
+                  </div>
+                </div>
                     <button onClick={() => setIsNewCaseModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
                         <PlusCircle size={20}/> Nouveau Dossier
                     </button>
