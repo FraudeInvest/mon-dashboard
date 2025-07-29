@@ -442,20 +442,53 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
         )}
         <div>
             <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                    <FolderKanban className="text-yellow-500" size={32} />
-                    <h2 className="text-3xl font-bold text-gray-800">Gestion des Dossiers</h2>
-                </div>
-                 <div className="flex items-center gap-2">
-                    {selectedIds.length > 0 && (
-                        <button onClick={handleDeleteSelected} className="flex items-center gap-2 bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition">
-                            <Trash2 size={20}/> Supprimer ({selectedIds.length})
-                        </button>
-                    )}
-                    <button onClick={() => setIsNewCaseModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
-                        <PlusCircle size={20}/> Nouveau Dossier
-                    </button>
-                </div>
+  <div className="flex items-center gap-3">
+    <FolderKanban className="text-yellow-500" size={32} />
+    <h2 className="text-3xl font-bold text-gray-800">Gestion des Dossiers</h2>
+  </div>
+
+  <div className="flex items-center gap-2">
+    {selectedIds.length > 0 && (
+      <button
+        onClick={handleDeleteSelected}
+        className="flex items-center gap-2 bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition"
+      >
+        <Trash2 size={20} />
+        Supprimer ({selectedIds.length})
+      </button>
+    )}
+
+    {/* Bouton Importer (Encadré Vert) */}
+    <label className="flex items-center gap-2 border-2 border-green-500 text-green-700 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-50 transition cursor-pointer">
+      <Upload size={20} />
+      Importer
+      <input
+        type="file"
+        accept=".xlsx, .xls"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+    </label>
+
+    {/* Bouton Exporter (Encadré Rouge) */}
+    <button
+      onClick={handleExport}
+      className="flex items-center gap-2 border-2 border-red-500 text-red-700 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-50 transition"
+    >
+      <FileDown size={20} />
+      Exporter
+    </button>
+
+    {/* Bouton Nouveau Dossier */}
+    <button
+      onClick={() => setIsNewCaseModalOpen(true)}
+      className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition"
+    >
+      <PlusCircle size={20} />
+      Nouveau Dossier
+    </button>
+  </div>
+</div>
             </div>
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="overflow-x-auto">
