@@ -386,7 +386,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
-        + if (!file) return;
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = (evt) => {
             try {
