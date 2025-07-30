@@ -1,3 +1,4 @@
+import * as XLSX from 'xlsx';
 import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, FunnelChart, Funnel, LabelList, ScatterChart, Scatter, ZAxis } from 'recharts';
 import {
