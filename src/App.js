@@ -386,16 +386,19 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file || !isXlsxLoaded) return;
+        + if (!file) return;
         const reader = new FileReader();
         reader.onload = (evt) => {
             try {
                 const bstr = evt.target.result;
                 const wb = window.XLSX.read(bstr, { type: 'binary' });
-                const wb = XLSX.read(bstr, { type: 'binary' });
+                + const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
                 const data = window.XLSX.utils.sheet_to_json(ws);
-                const data = XLSX.utils.sheet_to_json(ws);
+                + const data = XLSX.utils.sheet_to_json(ws);
+                // Basic validation and mapping
                 const formattedData = data.map((row, index) => ({
                     id: row['id'] || `IMPORT-${index}`,
                     dateSaisine: row['dateSaisine'] || new Date().toISOString().split('T')[0],
@@ -879,7 +882,7 @@ export default function App() {
                     </div>
                     <div className="flex items-center gap-4">
                         <Bell size={24} className="text-gray-600" />
-                        <div className="flex items-center gap-2">
+
                             <UserCircle size={32} className="text-gray-600" />
                             <div>
                                 <p className="font-semibold text-sm text-gray-800">John Doe</p>
