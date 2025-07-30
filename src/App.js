@@ -1,30 +1,30 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, FunnelChart, Funnel, LabelList, ScatterChart, Scatter, ZAxis } from 'recharts';
-import { 
+import {
     LayoutDashboard, FolderKanban, BarChart3, Settings, Bell, UserCircle, Search, PlusCircle, Upload, FileDown,
-    FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock, Sparkles, X, Info,
-    Hash, Building, FileText, MapPin, Euro, ChevronDown, Edit, Trash2
+    FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock,
+    Sparkles, X, Info, Hash, Building, FileText, MapPin, Euro, ChevronDown, Edit, Trash2
 } from 'lucide-react';
 
 // --- DATA GENERATION SCRIPT (EXPANDED) ---
 const a_depts = [
-    { code: '75', name: 'Paris', fullName: 'Paris' }, 
-    { code: '13', name: 'B-du-R', fullName: 'Bouches-du-Rhône' }, 
+    { code: '75', name: 'Paris', fullName: 'Paris' },
+    { code: '13', name: 'B-du-R', fullName: 'Bouches-du-Rhône' },
     { code: '69', name: 'Rhône', fullName: 'Rhône' },
-    { code: '31', name: 'H-Garonne', fullName: 'Haute-Garonne' }, 
-    { code: '06', name: 'A-Mar.', fullName: 'Alpes-Maritimes' }, 
+    { code: '31', name: 'H-Garonne', fullName: 'Haute-Garonne' },
+    { code: '06', name: 'A-Mar.', fullName: 'Alpes-Maritimes' },
     { code: '44', name: 'L-Atl.', fullName: 'Loire-Atlantique' },
-    { code: '67', name: 'Bas-Rhin', fullName: 'Bas-Rhin' }, 
-    { code: '34', name: 'Hérault', fullName: 'Hérault' }, 
+    { code: '67', name: 'Bas-Rhin', fullName: 'Bas-Rhin' },
+    { code: '34', name: 'Hérault', fullName: 'Hérault' },
     { code: '33', name: 'Gironde', fullName: 'Gironde' },
-    { code: '59', name: 'Nord', fullName: 'Nord' }, 
-    { code: '35', name: 'I-et-V.', fullName: 'Ille-et-Vilaine' }, 
+    { code: '59', name: 'Nord', fullName: 'Nord' },
+    { code: '35', name: 'I-et-V.', fullName: 'Ille-et-Vilaine' },
     { code: '51', name: 'Marne', fullName: 'Marne' },
-    { code: '76', name: 'S-Mar.', fullName: 'Seine-Maritime' }, 
-    { code: '42', name: 'Loire', fullName: 'Loire' }, 
+    { code: '76', name: 'S-Mar.', fullName: 'Seine-Maritime' },
+    { code: '42', name: 'Loire', fullName: 'Loire' },
     { code: '83', name: 'Var', fullName: 'Var' },
-    { code: '38', name: 'Isère', fullName: 'Isère' }, 
-    { code: '21', name: 'Côte-d\'Or', fullName: 'Côte-d\'Or' }, 
+    { code: '38', name: 'Isère', fullName: 'Isère' },
+    { code: '21', name: 'Côte-d\'Or', fullName: 'Côte-d\'Or' },
     { code: '49', name: 'M-et-L.', fullName: 'Maine-et-Loire' }
 ];
 const a_compagnies = ["AXA", "MAIF", "GMF", "Allianz", "Groupama", "MACIF", "Matmut", "Crédit Agricole Assurances"];
@@ -64,8 +64,10 @@ const generateFacturesContacts = (count) => Array.from({ length: count }, () => 
     const ville = getRandom(a_depts).name;
     return {
         enseigne: `${enseigne} ${ville}`,
-        mail1: `contact@${enseigne.split(' ')[0].toLowerCase()}.fr`, mail2: `verif@${enseigne.split(' ')[0].toLowerCase()}.fr`,
-        contact: `Service Client`, observations: Math.random() > 0.5 ? 'Réponse rapide.' : 'Nécessite une preuve d\'achat.',
+        mail1: `contact@${enseigne.split(' ')[0].toLowerCase()}.fr`,
+        mail2: `verif@${enseigne.split(' ')[0].toLowerCase()}.fr`,
+        contact: `Service Client`,
+        observations: Math.random() > 0.5 ? 'Réponse rapide.' : 'Nécessite une preuve d\'achat.',
     };
 });
 
@@ -80,25 +82,41 @@ const generateMairiesData = (count) => Array.from({ length: count }, () => {
 const generateArpFranceData = (count) => Array.from({ length: count }, () => {
     const commune = getRandom(a_depts).name;
     return {
-        agence: `Agence ${getRandom(a_regions)}`, identite: `${getRandom(a_prenoms)} ${getRandom(a_noms)}`,
-        adresse: `${randomNum(1,100)} Avenue de France`, cp: `${randomNum(10,95)}000`, commune: commune,
-        region: getRandom(a_regions), telFixe: `0${randomNum(1,5)}...`, telPort: `0${randomNum(6,7)}...`, mail: `${getRandom(a_noms).toLowerCase()}@arp-fr.com`
+        agence: `Agence ${getRandom(a_regions)}`,
+        identite: `${getRandom(a_prenoms)} ${getRandom(a_noms)}`,
+        adresse: `${randomNum(1,100)} Avenue de France`,
+        cp: `${randomNum(10,95)}000`,
+        commune: commune,
+        region: getRandom(a_regions),
+        telFixe: `0${randomNum(1,5)}...`,
+        telPort: `0${randomNum(6,7)}...`,
+        mail: `${getRandom(a_noms).toLowerCase()}@arp-fr.com`
     };
 });
 
 const generateArpMondeData = (count) => Array.from({ length: count }, () => ({
-    pays: getRandom(a_pays), agence: `Global Invest ${getRandom(a_pays)}`, identite: `${getRandom(a_prenoms)} ${getRandom(a_noms)}`,
-    adresse: `${randomNum(1,100)} Main Street`, cp: `${randomNum(1000,99999)}`, commune: `Capital City`,
-    telFixe: `+${randomNum(10,99)}...`, telPort: `+${randomNum(10,99)}...`, mail: `${getRandom(a_noms).toLowerCase()}@global-invest.com`, langue: getRandom(a_langues)
+    pays: getRandom(a_pays),
+    agence: `Global Invest ${getRandom(a_pays)}`,
+    identite: `${getRandom(a_prenoms)} ${getRandom(a_noms)}`,
+    adresse: `${randomNum(1,100)} Main Street`,
+    cp: `${randomNum(1000,99999)}`,
+    commune: `Capital City`,
+    telFixe: `+${randomNum(10,99)}...`,
+    telPort: `+${randomNum(10,99)}...`,
+    mail: `${getRandom(a_noms).toLowerCase()}@global-invest.com`,
+    langue: getRandom(a_langues)
 }));
 
 // --- HELPERS & PAGINATION ---
 const getResultPill = (result) => {
     if (!result) return <span className="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-100 rounded-full">En attente</span>;
     switch (result) {
-      case 'Positif': return <span className="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">{result}</span>;
-      case 'Négatif': return <span className="px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">{result}</span>;
-      default: return <span className="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-100 rounded-full">{result}</span>;
+        case 'Positif':
+            return <span className="px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">{result}</span>;
+        case 'Négatif':
+            return <span className="px-2 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">{result}</span>;
+        default:
+            return <span className="px-2 py-1 text-xs font-medium text-gray-800 bg-gray-100 rounded-full">{result}</span>;
     }
 };
 
@@ -106,7 +124,17 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => 
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     if (totalPages <= 1) return null;
     return (
-        <div className="flex justify-end items-center mt-4"><span className="text-sm text-gray-600 mr-4">Page {currentPage} sur {totalPages}</span><div className="inline-flex"><button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="px-3 py-1 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50"><ChevronLeft size={16} /></button><button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="px-3 py-1 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50"><ChevronRight size={16} /></button></div></div>
+        <div className="flex justify-end items-center mt-4">
+            <span className="text-sm text-gray-600 mr-4">Page {currentPage} sur {totalPages}</span>
+            <div className="inline-flex">
+                <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} className="px-3 py-1 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50">
+                    <ChevronLeft size={16} />
+                </button>
+                <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} className="px-3 py-1 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50">
+                    <ChevronRight size={16} />
+                </button>
+            </div>
+        </div>
     );
 };
 
@@ -144,7 +172,7 @@ const FranceMap = ({ data }) => {
         const color = interpolateColor([199, 210, 254], [30, 58, 138], factor);
         return `rgb(${color.join(',')})`;
     };
-    
+
     const handleMouseMove = (e, deptFullName, stats) => {
         setTooltip({ visible: true, content: `${deptFullName}: ${stats.count || 0} sinistre(s) - ${stats.totalAmount ? stats.totalAmount.toLocaleString('fr-FR') : 0} €`, x: e.pageX, y: e.pageY });
     };
@@ -157,7 +185,7 @@ const FranceMap = ({ data }) => {
                     const bgColor = getColor(stats.count);
                     const textColor = (stats.count / (maxIncidents || 1)) > 0.5 ? 'white' : 'black';
                     return (
-                        <div 
+                        <div
                             key={dept.code}
                             className="p-1 text-center rounded-md text-xs flex flex-col items-center justify-center aspect-square transition-transform duration-200 hover:scale-110"
                             style={{ backgroundColor: bgColor, color: textColor }}
@@ -181,14 +209,14 @@ const FranceMap = ({ data }) => {
 
 
 // --- VIEWS / COMPONENTS ---
-const DashboardView = ({ cases }) => {
+const DashboardView = ({ cases, onCardClick }) => {
     const casesInProgress = cases.filter(c => !c.resultat).length;
     const casesClosed = cases.filter(c => c.resultat).length;
     const positiveResults = cases.filter(c => c.resultat === 'Positif').length;
     const positiveRate = casesClosed > 0 ? ((positiveResults / casesClosed) * 100).toFixed(0) : 0;
-    
-    const StatCard = ({ title, value, icon: Icon, colorClass }) => (
-        <div className={`p-6 rounded-lg shadow-md text-white ${colorClass}`}>
+
+    const StatCard = ({ title, value, icon: Icon, colorClass, onClick }) => (
+        <button onClick={onClick} disabled={!onClick} className={`p-6 rounded-lg shadow-md text-white text-left w-full transition-transform duration-200 hover:scale-105 ${colorClass} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}>
             <div className="flex justify-between items-start">
                 <div>
                     <h3 className="text-sm font-medium opacity-80">{title}</h3>
@@ -198,34 +226,34 @@ const DashboardView = ({ cases }) => {
                     <Icon size={24} />
                 </div>
             </div>
-        </div>
+        </button>
     );
 
     return (
-    <div>
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">Vue d'ensemble</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard title="Dossiers en cours" value={casesInProgress} icon={FolderClock} colorClass="bg-blue-500" />
-            <StatCard title="Dossiers clôturés" value={casesClosed} icon={FolderCheck} colorClass="bg-green-500" />
-            <StatCard title="Résultat Positif (global)" value={`${positiveRate}%`} icon={Percent} colorClass="bg-purple-500" />
-            <StatCard title="Délai moyen d'enquête" value="28 jours" icon={Clock} colorClass="bg-orange-500" />
+        <div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">Vue d'ensemble</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard title="Dossiers en cours" value={casesInProgress} icon={FolderClock} colorClass="bg-blue-500" onClick={() => onCardClick('en-cours', 'Dossiers en cours')} />
+                <StatCard title="Dossiers clôturés" value={casesClosed} icon={FolderCheck} colorClass="bg-green-500" onClick={() => onCardClick('clotures', 'Dossiers clôturés')} />
+                <StatCard title="Résultat Positif (global)" value={`${positiveRate}%`} icon={Percent} colorClass="bg-purple-500" onClick={() => onCardClick('positif', 'Dossiers avec résultat positif')} />
+                <StatCard title="Délai moyen d'enquête" value="28 jours" icon={Clock} colorClass="bg-orange-500" />
+            </div>
+            <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+                <h3 className="font-bold text-gray-800 mb-4">Dossiers Récents</h3>
+                <ul>
+                    {cases.slice(0, 5).map(c => (
+                        <li key={c.id} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0">
+                            <div>
+                                <p className="font-semibold text-gray-700">{c.id} - {c.compagnie}</p>
+                                <p className="text-sm text-gray-500">{c.nature} - {c.adresse}</p>
+                            </div>
+                            {getResultPill(c.resultat)}
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
-        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
-            <h3 className="font-bold text-gray-800 mb-4">Dossiers Récents</h3>
-            <ul>
-                {cases.slice(0, 5).map(c => (
-                    <li key={c.id} className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0">
-                        <div>
-                            <p className="font-semibold text-gray-700">{c.id} - {c.compagnie}</p>
-                            <p className="text-sm text-gray-500">{c.nature} - {c.adresse}</p>
-                        </div>
-                        {getResultPill(c.resultat)}
-                    </li>
-                ))}
-            </ul>
-        </div>
-    </div>
-  );
+    );
 }
 
 // --- FAKE GEMINI API CALL ---
@@ -236,7 +264,7 @@ const callGeminiAPI = (caseData) => {
             const summary = `Le dossier concerne un sinistre de type "${caseData.nature}" déclaré à ${caseData.adresse} pour un montant de ${caseData.montant.toLocaleString('fr-FR')} €.`;
             const analysis = `Le montant déclaré est significatif. Les sinistres de type "${caseData.nature}" dans cette zone présentent un historique de fraude modéré. Aucun lien direct avec des réseaux de fraude connus n'a été établi à ce stade.`;
             const recommendations = `1. Vérifier l'authenticité des factures fournies.\n2. Mener un entretien approfondi avec l'assuré.\n3. Envisager une enquête de voisinage si des incohérences apparaissent.`;
-            
+
             const result = {
                 summary,
                 riskLevel,
@@ -251,7 +279,7 @@ const callGeminiAPI = (caseData) => {
 const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
-    
+
     const [selectedIds, setSelectedIds] = useState([]);
     const paginatedData = cases.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
@@ -262,11 +290,15 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [newCaseData, setNewCaseData] = useState({
-        numSinistre: '', compagnie: '', nature: '', adresse: '', montant: ''
+        numSinistre: '',
+        compagnie: '',
+        nature: '',
+        adresse: '',
+        montant: ''
     });
-    
+
     useEffect(() => {
-        if(editingCase) {
+        if (editingCase) {
             setNewCaseData(editingCase);
             setIsNewCaseModalOpen(true);
         }
@@ -290,13 +322,13 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
 
     const handleDeleteSelected = () => {
         setCases(cases.filter(c => !selectedIds.includes(c.id)));
-        setNotification({type: 'success', message: `${selectedIds.length} dossier(s) supprimé(s).`});
+        setNotification({ type: 'success', message: `${selectedIds.length} dossier(s) supprimé(s).` });
         setSelectedIds([]);
     };
 
     const handleDeleteOne = (id) => {
         setCases(cases.filter(c => c.id !== id));
-        setNotification({type: 'success', message: `Dossier ${id} supprimé.`});
+        setNotification({ type: 'success', message: `Dossier ${id} supprimé.` });
     };
 
     const handleEditClick = (caseItem) => {
@@ -324,13 +356,13 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
         setSelectedCase(null);
         setAnalysisResult(null);
     };
-    
+
     const handleCaseSubmit = (e) => {
         e.preventDefault();
         if (editingCase) {
             // Update existing case
             setCases(cases.map(c => c.id === editingCase.id ? { ...c, ...newCaseData, montant: Number(newCaseData.montant) } : c));
-            setNotification({type: 'success', message: `Dossier ${editingCase.id} mis à jour.`});
+            setNotification({ type: 'success', message: `Dossier ${editingCase.id} mis à jour.` });
         } else {
             // Add new case
             const newId = `2025-${String(cases.length + 1).padStart(3, '0')}`;
@@ -344,7 +376,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                 resultat: null,
             };
             setCases([newCase, ...cases]);
-            setNotification({type: 'success', message: `Dossier ${newId} ajouté.`});
+            setNotification({ type: 'success', message: `Dossier ${newId} ajouté.` });
         }
         setIsNewCaseModalOpen(false);
         setEditingCase(null);
@@ -378,153 +410,129 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                     resultat: row['resultat'] || null,
                 }));
                 setCases(formattedData);
-                setNotification({type: 'success', message: `Importation réussie ! ${formattedData.length} dossiers ont été chargés.`});
+                setNotification({ type: 'success', message: `Importation réussie ! ${formattedData.length} dossiers ont été chargés.` });
             } catch (error) {
                 console.error("Error reading file:", error);
-                setNotification({type: 'error', message: "Erreur lors de la lecture du fichier."});
+                setNotification({ type: 'error', message: "Erreur lors de la lecture du fichier." });
             }
         };
         reader.readAsBinaryString(file);
     };
-    
+
     const handleExport = () => {
         if (!isXlsxLoaded) {
-            setNotification({type: 'error', message: "La librairie d'export n'est pas encore chargée."});
+            setNotification({ type: 'error', message: "La librairie d'export n'est pas encore chargée." });
             return;
         }
         const ws = window.XLSX.utils.json_to_sheet(cases);
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "Dossiers");
         window.XLSX.writeFile(wb, "export_dossiers.xlsx");
-        setNotification({type: 'success', message: "Exportation réussie."});
+        setNotification({ type: 'success', message: "Exportation réussie." });
     };
 
     return (
-    <>
-        {isAnalysisModalOpen && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
-                    <div className="flex justify-between items-center border-b pb-3 mb-4">
-                        <h3 className="text-xl font-bold text-gray-800">Analyse IA Gemini - Dossier {selectedCase?.id}</h3>
-                        <button onClick={closeAnalysisModal} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
-                    </div>
-                    {isLoading && <div className="flex justify-center items-center h-48"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div></div>}
-                    {analysisResult && (
-                        <div className="space-y-4 text-sm">
-                            <div><strong className="text-gray-700">Résumé :</strong><p className="text-gray-600">{analysisResult.summary}</p></div>
-                            <div><strong className="text-gray-700">Niveau de Risque :</strong> <span className={`font-bold px-2 py-1 rounded-full text-xs ${analysisResult.riskLevel === 'Élevé' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>{analysisResult.riskLevel}</span></div>
-                            <div><strong className="text-gray-700">Analyse :</strong><p className="text-gray-600">{analysisResult.analysis}</p></div>
-                            <div><strong className="text-gray-700">Actions Recommandées :</strong><pre className="bg-gray-100 p-3 rounded-md whitespace-pre-wrap font-sans text-gray-600">{analysisResult.recommendations}</pre></div>
+        <>
+            {isAnalysisModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
+                        <div className="flex justify-between items-center border-b pb-3 mb-4">
+                            <h3 className="text-xl font-bold text-gray-800">Analyse IA Gemini - Dossier {selectedCase?.id}</h3>
+                            <button onClick={closeAnalysisModal} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
                         </div>
-                    )}
-                </div>
-            </div>
-        )}
-        {isNewCaseModalOpen && (
-             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
-                    <div className="flex justify-between items-center border-b pb-3 mb-4">
-                        <h3 className="text-xl font-bold text-gray-800">{editingCase ? `Modifier le Dossier ${editingCase.id}` : 'Nouveau Dossier'}</h3>
-                        <button onClick={() => { setIsNewCaseModalOpen(false); setEditingCase(null); }} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
+                        {isLoading && <div className="flex justify-center items-center h-48"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div></div>}
+                        {analysisResult && (
+                            <div className="space-y-4 text-sm">
+                                <div><strong className="text-gray-700">Résumé :</strong><p className="text-gray-600">{analysisResult.summary}</p></div>
+                                <div><strong className="text-gray-700">Niveau de Risque :</strong> <span className={`font-bold px-2 py-1 rounded-full text-xs ${analysisResult.riskLevel === 'Élevé' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>{analysisResult.riskLevel}</span></div>
+                                <div><strong className="text-gray-700">Analyse :</strong><p className="text-gray-600">{analysisResult.analysis}</p></div>
+                                <div><strong className="text-gray-700">Actions Recommandées :</strong><pre className="bg-gray-100 p-3 rounded-md whitespace-pre-wrap font-sans text-gray-600">{analysisResult.recommendations}</pre></div>
+                            </div>
+                        )}
                     </div>
-                    <form onSubmit={handleCaseSubmit} className="space-y-6 p-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="relative"><Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="N° de Sinistre" value={newCaseData.numSinistre} onChange={(e) => setNewCaseData({...newCaseData, numSinistre: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
-                            <div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Compagnie" value={newCaseData.compagnie} onChange={(e) => setNewCaseData({...newCaseData, compagnie: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
-                            <div className="relative"><FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Nature du Sinistre" value={newCaseData.nature} onChange={(e) => setNewCaseData({...newCaseData, nature: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
-                            <div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Adresse" value={newCaseData.adresse} onChange={(e) => setNewCaseData({...newCaseData, adresse: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                </div>
+            )}
+            {isNewCaseModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
+                        <div className="flex justify-between items-center border-b pb-3 mb-4">
+                            <h3 className="text-xl font-bold text-gray-800">{editingCase ? `Modifier le Dossier ${editingCase.id}` : 'Nouveau Dossier'}</h3>
+                            <button onClick={() => { setIsNewCaseModalOpen(false); setEditingCase(null); }} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
                         </div>
-                        <div className="relative"><Euro className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="number" placeholder="Montant" value={newCaseData.montant} onChange={(e) => setNewCaseData({...newCaseData, montant: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
-                        <div className="flex justify-end gap-2 pt-4"><button type="button" onClick={() => { setIsNewCaseModalOpen(false); setEditingCase(null); }} className="py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Annuler</button><button type="submit" className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{editingCase ? 'Enregistrer' : 'Ajouter'}</button></div>
-                    </form>
+                        <form onSubmit={handleCaseSubmit} className="space-y-6 p-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="relative"><Hash className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="N° de Sinistre" value={newCaseData.numSinistre} onChange={(e) => setNewCaseData({...newCaseData, numSinistre: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                                <div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Compagnie" value={newCaseData.compagnie} onChange={(e) => setNewCaseData({...newCaseData, compagnie: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                                <div className="relative"><FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Nature du Sinistre" value={newCaseData.nature} onChange={(e) => setNewCaseData({...newCaseData, nature: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                                <div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="text" placeholder="Adresse" value={newCaseData.adresse} onChange={(e) => setNewCaseData({...newCaseData, adresse: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                            </div>
+                            <div className="relative"><Euro className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/><input type="number" placeholder="Montant" value={newCaseData.montant} onChange={(e) => setNewCaseData({...newCaseData, montant: e.target.value})} className="pl-10 mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" required /></div>
+                            <div className="flex justify-end gap-2 pt-4"><button type="button" onClick={() => { setIsNewCaseModalOpen(false); setEditingCase(null); }} className="py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Annuler</button><button type="submit" className="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{editingCase ? 'Enregistrer' : 'Ajouter'}</button></div>
+                        </form>
+                    </div>
                 </div>
-            </div>
-        )}
-        <div>
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                    <FolderKanban className="text-yellow-500" size={32} />
-                    <h2 className="text-3xl font-bold text-gray-800">Gestion des Dossiers</h2>
-                </div>
-                 <div className="flex items-center gap-2">
-                    {selectedIds.length > 0 && (
-                        <button onClick={handleDeleteSelected} className="flex items-center gap-2 bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition">
-                            <Trash2 size={20}/> Supprimer ({selectedIds.length})
+            )}
+            <div>
+                <div className="flex justify-between items-center mb-6">
+                    <div className="flex items-center gap-3">
+                        <FolderKanban className="text-yellow-500" size={32} />
+                        <h2 className="text-3xl font-bold text-gray-800">Gestion des Dossiers</h2>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {selectedIds.length > 0 && (
+                            <button onClick={handleDeleteSelected} className="flex items-center gap-2 bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-700 transition">
+                                <Trash2 size={20}/> Supprimer ({selectedIds.length})
+                            </button>
+                        )}
+                         <label className="flex items-center gap-2 bg-orange-500 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-orange-600 transition cursor-pointer">
+                            <Upload size={20}/> Importer
+                            <input type="file" className="hidden" onChange={handleFileUpload} accept=".xlsx, .xls" />
+                        </label>
+                        <button onClick={handleExport} className="flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition">
+                            <FileDown size={20}/> Exporter
                         </button>
-                    )}
-
-                    {/* Bouton Importer (Encadré Vert) */}
-                    <label className="flex items-center gap-2 border-2 border-green-500 text-green-700 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-50 transition cursor-pointer">
-                      <Upload size={20} />
-                      Importer
-                      <input
-                        type="file"
-                        accept=".xlsx, .xls"
-                        onChange={handleFileUpload}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {/* Bouton Exporter (Encadré Rouge) */}
-                    <button
-                      onClick={handleExport}
-                      className="flex items-center gap-2 border-2 border-red-500 text-red-700 font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-red-50 transition"
-                    >
-                      <FileDown size={20} />
-                      Exporter
-                    </button>
-
-                    {/* Bouton Nouveau Dossier */}
-                    <button
-                      onClick={() => setIsNewCaseModalOpen(true)}
-                      className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition"
-                    >
-                     <PlusCircle size={20} />
-                     Nouveau Dossier
-                    </button>
-                  </div>
+                        <button onClick={() => setIsNewCaseModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
+                            <PlusCircle size={20}/> Nouveau Dossier
+                        </button>
+                    </div>
                 </div>
-                    <button onClick={() => setIsNewCaseModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
-                        <PlusCircle size={20}/> Nouveau Dossier
-                    </button>
-                </div>
-            </div>
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-blue-100">
-                            <tr>
-                                <th className="p-4 w-12"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === paginatedData.length && paginatedData.length > 0} className="form-checkbox h-5 w-5 text-blue-600 rounded" /></th>
-                                <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">N° Dossier</th>
-                                <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Compagnie</th>
-                                <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Nature Sinistre</th>
-                                <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Montant</th>
-                                <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Résultat</th>
-                                <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedData.map((c) => (
-                                <tr key={c.id} className={`border-b border-gray-200 ${selectedIds.includes(c.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
-                                    <td className="p-4"><input type="checkbox" checked={selectedIds.includes(c.id)} onChange={(e) => handleSelectOne(e, c.id)} className="form-checkbox h-5 w-5 text-blue-600 rounded" /></td>
-                                    <td className="p-4 font-medium text-gray-800">{c.id}</td>
-                                    <td className="p-4 text-gray-600">{c.compagnie}</td>
-                                    <td className="p-4 text-gray-600">{c.nature}</td>
-                                    <td className="p-4 text-gray-600">{c.montant.toLocaleString('fr-FR')} €</td>
-                                    <td className="p-4">{getResultPill(c.resultat)}</td>
-                                    <td className="p-4 flex items-center gap-2">
-                                        <button onClick={() => handleEditClick(c)} className="text-blue-600 hover:text-blue-800"><Edit size={18}/></button>
-                                        <button onClick={() => handleDeleteOne(c.id)} className="text-red-600 hover:text-red-800"><Trash2 size={18}/></button>
-                                    </td>
+                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-blue-100">
+                                <tr>
+                                    <th className="p-4 w-12"><input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === paginatedData.length && paginatedData.length > 0} className="form-checkbox h-5 w-5 text-blue-600 rounded" /></th>
+                                    <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">N° Dossier</th>
+                                    <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Compagnie</th>
+                                    <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Nature Sinistre</th>
+                                    <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Montant</th>
+                                    <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Résultat</th>
+                                    <th className="p-4 text-sm font-semibold text-blue-800 uppercase tracking-wider">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {paginatedData.map((c) => (
+                                    <tr key={c.id} className={`border-b border-gray-200 ${selectedIds.includes(c.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
+                                        <td className="p-4"><input type="checkbox" checked={selectedIds.includes(c.id)} onChange={(e) => handleSelectOne(e, c.id)} className="form-checkbox h-5 w-5 text-blue-600 rounded" /></td>
+                                        <td className="p-4 font-medium text-gray-800">{c.id}</td>
+                                        <td className="p-4 text-gray-600">{c.compagnie}</td>
+                                        <td className="p-4 text-gray-600">{c.nature}</td>
+                                        <td className="p-4 text-gray-600">{c.montant.toLocaleString('fr-FR')} €</td>
+                                        <td className="p-4">{getResultPill(c.resultat)}</td>
+                                        <td className="p-4 flex items-center gap-2">
+                                            <button onClick={() => handleAnalyseClick(c)} className="text-purple-600 hover:text-purple-800"><Sparkles size={18}/></button>
+                                            <button onClick={() => handleEditClick(c)} className="text-blue-600 hover:text-blue-800"><Edit size={18}/></button>
+                                            <button onClick={() => handleDeleteOne(c.id)} className="text-red-600 hover:text-red-800"><Trash2 size={18}/></button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <Pagination currentPage={currentPage} totalItems={cases.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
                 </div>
-                <Pagination currentPage={currentPage} totalItems={cases.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
             </div>
-        </div>
-    </>
+        </>
     );
 };
 
@@ -537,17 +545,22 @@ const ReportsView = ({ cases }) => {
         const y = cy + radius * Math.sin(-midAngle * RADIAN);
         return (<text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">{`${(percent * 100).toFixed(0)}%`}</text>);
     };
-    
+
     const darkenColor = (color, percent) => {
-        let f=parseInt(color.slice(1),16),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=f>>16,G=f>>8&0x00FF,B=f&0x0000FF;
-        return "#"+(0x1000000+(Math.round((t-R)*p)+R)*0x10000+(Math.round((t-G)*p)+G)*0x100+(Math.round((t-B)*p)+B)).toString(16).slice(1);
+        let f = parseInt(color.slice(1), 16),
+            t = percent < 0 ? 0 : 255,
+            p = percent < 0 ? percent * -1 : percent,
+            R = f >> 16,
+            G = f >> 8 & 0x00FF,
+            B = f & 0x0000FF;
+        return "#" + (0x1000000 + (Math.round((t - R) * p) + R) * 0x10000 + (Math.round((t - G) * p) + G) * 0x100 + (Math.round((t - B) * p) + B)).toString(16).slice(1);
     };
 
     const dataByNature = useMemo(() => { const counts = cases.reduce((acc, c) => { acc[c.nature] = (acc[c.nature] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, [cases]);
     const dataByResult = useMemo(() => { const closed = cases.filter(c => c.resultat); const counts = closed.reduce((acc, c) => { acc[c.resultat] = (acc[c.resultat] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, [cases]);
-    const dataByCompany = useMemo(() => { const counts = cases.reduce((acc, c) => { acc[c.compagnie] = (acc[c.compagnie] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, Saisines: counts[key] })).sort((a,b) => b.Saisines - a.Saisines); }, [cases]);
+    const dataByCompany = useMemo(() => { const counts = cases.reduce((acc, c) => { acc[c.compagnie] = (acc[c.compagnie] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, Saisines: counts[key] })).sort((a, b) => b.Saisines - a.Saisines); }, [cases]);
     const dataByMonth = useMemo(() => { const counts = cases.reduce((acc, c) => { const month = c.dateSaisine.substring(0, 7); acc[month] = (acc[month] || 0) + 1; return acc; }, {}); return Object.keys(counts).sort().map(key => ({ name: key, Dossiers: counts[key] })); }, [cases]);
-    
+
     const dataResolutionTime = useMemo(() => {
         const natureGroups = {};
         cases.filter(c => c.dateCloture).forEach(c => {
@@ -579,26 +592,94 @@ const ReportsView = ({ cases }) => {
     }, [cases]);
 
     return (
-    <div><h2 className="text-3xl font-bold text-gray-800 mb-6">Analyse & Rapports</h2><div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByNature} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByNature.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={darkenColor(NEW_PALETTE[index % NEW_PALETTE.length], 0.2)} />)}</Pie><Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByNature.map((entry, index) => <Cell key={`cell-main-${index}`} fill={NEW_PALETTE[index % NEW_PALETTE.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-        <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultat Global</h3><ResponsiveContainer width="100%" height={300}><PieChart><Pie data={dataByResult} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByResult.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={entry.name === 'Positif' ? darkenColor('#16A085', 0.2) : darkenColor('#E91E63', 0.2)} />)}</Pie><Pie data={dataByResult} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByResult.map((entry, index) => <Cell key={`cell-main-${index}`} fill={entry.name === 'Positif' ? '#16A085' : '#E91E63'} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Délai moyen de résolution par nature</h3><ResponsiveContainer width="100%" height={300}><BarChart data={dataResolutionTime}><defs><linearGradient id="colorPastel" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2980B9" stopOpacity={0.9}/><stop offset="95%" stopColor="#8E44AD" stopOpacity={0.6}/></linearGradient></defs><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="Délai moyen (jours)" fill="url(#colorPastel)" /></BarChart></ResponsiveContainer></div>
-        <div className="lg:col-span-4 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Évolution des saisines par mois</h3><ResponsiveContainer width="100%" height={300}><LineChart data={dataByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Line type="monotone" dataKey="Dossiers" stroke="#2980B9" strokeWidth={2} activeDot={{ r: 8 }} /></LineChart></ResponsiveContainer></div>
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Cartographie des Sinistres</h3><FranceMap data={cases} /></div>
-        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md"><h3 className="font-bold text-gray-800 mb-4">Résultats par Compagnie</h3><ResponsiveContainer width="100%" height={500}><BarChart data={dataResultsByCompany} stackOffset="sign"><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><Tooltip /><Legend /><Bar dataKey="Positif" fill="#93C572" stackId="stack" /><Bar dataKey="Négatif" fill="#DC2626" stackId="stack" /></BarChart></ResponsiveContainer></div>
-    </div></div>
-  );
+        <div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">Analyse & Rapports</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie data={dataByNature} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByNature.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={darkenColor(NEW_PALETTE[index % NEW_PALETTE.length], 0.2)} />)}</Pie>
+                            <Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByNature.map((entry, index) => <Cell key={`cell-main-${index}`} fill={NEW_PALETTE[index % NEW_PALETTE.length]} />)}</Pie>
+                            <Tooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="font-bold text-gray-800 mb-4">Résultat Global</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie data={dataByResult} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByResult.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={entry.name === 'Positif' ? darkenColor('#16A085', 0.2) : darkenColor('#E91E63', 0.2)} />)}</Pie>
+                            <Pie data={dataByResult} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByResult.map((entry, index) => <Cell key={`cell-main-${index}`} fill={entry.name === 'Positif' ? '#16A085' : '#E91E63'} />)}</Pie>
+                            <Tooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="font-bold text-gray-800 mb-4">Délai moyen de résolution par nature</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={dataResolutionTime}>
+                            <defs><linearGradient id="colorPastel" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2980B9" stopOpacity={0.9}/><stop offset="95%" stopColor="#8E44AD" stopOpacity={0.6}/></linearGradient></defs>
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="Délai moyen (jours)" fill="url(#colorPastel)" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="lg:col-span-4 bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="font-bold text-gray-800 mb-4">Évolution des saisines par mois</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={dataByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Line type="monotone" dataKey="Dossiers" stroke="#2980B9" strokeWidth={2} activeDot={{ r: 8 }} />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="font-bold text-gray-800 mb-4">Cartographie des Sinistres</h3>
+                    <FranceMap data={cases} />
+                </div>
+                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="font-bold text-gray-800 mb-4">Résultats par Compagnie</h3>
+                    <ResponsiveContainer width="100%" height={500}>
+                        <BarChart data={dataResultsByCompany} stackOffset="sign">
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="Positif" fill="#93C572" stackId="stack" />
+                            <Bar dataKey="Négatif" fill="#DC2626" stackId="stack" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+        </div>
+    );
 }
-  
+
 const PaginatedTableView = ({ title, data, columns }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
     const paginatedData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     return (
-        <div><h2 className="text-3xl font-bold text-gray-800 mb-6">{title}</h2><div className="bg-white p-4 rounded-lg shadow-md overflow-x-auto"><table className="w-full text-left">
-            <thead className="border-b-2 border-gray-200"><tr>{columns.map(col => <th key={col.key} className="p-3 text-sm font-semibold text-gray-600">{col.header}</th>)}</tr></thead>
-            <tbody>{paginatedData.map((item, index) => (<tr key={index} className="border-b border-gray-200 hover:bg-gray-50">{columns.map(col => <td key={col.key} className="p-3 text-gray-600">{item[col.key]}</td>)}</tr>))}</tbody>
-        </table><Pagination currentPage={currentPage} totalItems={data.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} /></div></div>
+        <div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">{title}</h2>
+            <div className="bg-white p-4 rounded-lg shadow-md overflow-x-auto">
+                <table className="w-full text-left">
+                    <thead className="border-b-2 border-gray-200">
+                        <tr>{columns.map(col => <th key={col.key} className="p-3 text-sm font-semibold text-gray-600">{col.header}</th>)}</tr>
+                    </thead>
+                    <tbody>{paginatedData.map((item, index) => (<tr key={index} className="border-b border-gray-200 hover:bg-gray-50">{columns.map(col => <td key={col.key} className="p-3 text-gray-600">{item[col.key]}</td>)}</tr>))}</tbody>
+                </table>
+                <Pagination currentPage={currentPage} totalItems={data.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
+            </div>
+        </div>
     );
 };
 
@@ -656,87 +737,161 @@ const JurisprudenceView = () => {
     );
 };
 
-const ArpView = ({ allArpFrance, allArpMonde }) => {
+const ArpView = () => {
     const [arpTab, setArpTab] = useState('france');
+    const allArpFrance = useMemo(() => generateArpFranceData(100), []);
+    const allArpMonde = useMemo(() => generateArpMondeData(100), []);
     return (
-        <div><h2 className="text-3xl font-bold text-gray-800 mb-6">ARP (Analyse Risques Particuliers)</h2><div className="flex border-b border-gray-200 mb-4"><button onClick={() => setArpTab('france')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'france' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>France</button><button onClick={() => setArpTab('monde')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'monde' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>Monde</button></div>
-        {arpTab === 'france' && <PaginatedTableView title="" data={allArpFrance} columns={[{key: 'agence', header: 'Agence'}, {key: 'identite', header: 'Identité'}, {key: 'commune', header: 'Commune'}, {key: 'mail', header: 'Mail'}]} />}
-        {arpTab === 'monde' && <PaginatedTableView title="" data={allArpMonde} columns={[{key: 'pays', header: 'Pays'}, {key: 'agence', header: 'Agence'}, {key: 'identite', header: 'Identité'}, {key: 'mail', header: 'Mail'}, {key: 'langue', header: 'Langue'}]} />}
+        <div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6">ARP (Analyse Risques Particuliers)</h2>
+            <div className="flex border-b border-gray-200 mb-4">
+                <button onClick={() => setArpTab('france')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'france' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>France</button>
+                <button onClick={() => setArpTab('monde')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'monde' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>Monde</button>
+            </div>
+            {arpTab === 'france' && <PaginatedTableView title="" data={allArpFrance} columns={[{key: 'agence', header: 'Agence'}, {key: 'identite', header: 'Identité'}, {key: 'commune', header: 'Commune'}, {key: 'mail', header: 'Mail'}]} />}
+            {arpTab === 'monde' && <PaginatedTableView title="" data={allArpMonde} columns={[{key: 'pays', header: 'Pays'}, {key: 'agence', header: 'Agence'}, {key: 'identite', header: 'Identité'}, {key: 'mail', header: 'Mail'}, {key: 'langue', header: 'Langue'}]} />}
         </div>
     );
 };
 
 // --- MAIN APP ---
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [allCases, setAllCases] = useState(() => generateCasesData(100));
-  const [notification, setNotification] = useState({type: '', message: ''});
-  const [isXlsxLoaded, setIsXlsxLoaded] = useState(false);
-  
-  const allFactures = useMemo(() => generateFacturesContacts(100), []);
-  const allMairies = useMemo(() => generateMairiesData(100), []);
-  const allArpFrance = useMemo(() => generateArpFranceData(100), []);
-  const allArpMonde = useMemo(() => generateArpMondeData(100), []);
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [allCases, setAllCases] = useState(() => generateCasesData(100));
+    const [notification, setNotification] = useState({ type: '', message: '' });
+    const [isXlsxLoaded, setIsXlsxLoaded] = useState(false);
+    const [filteredCases, setFilteredCases] = useState(null);
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    script.async = true;
-    script.onload = () => setIsXlsxLoaded(true);
-    document.body.appendChild(script);
-    return () => { if (document.body.contains(script)) document.body.removeChild(script); };
-  }, []);
+    const allFactures = useMemo(() => generateFacturesContacts(100), []);
+    const allMairies = useMemo(() => generateMairiesData(100), []);
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard': return <DashboardView cases={allCases} />;
-      case 'cases': return <CasesView cases={allCases} setCases={setAllCases} setNotification={setNotification} isXlsxLoaded={isXlsxLoaded} />;
-      case 'reports': return <ReportsView cases={allCases} />;
-      case 'factures': return <PaginatedTableView title="Vérification des Factures" data={allFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
-      case 'mairies': return <PaginatedTableView title="Répertoire des Mairies" data={allMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
-      case 'jurisprudence': return <JurisprudenceView />;
-      case 'arp': return <ArpView allArpFrance={allArpFrance} allArpMonde={allArpMonde} />;
-      case 'settings': return <div>Paramètres</div>;
-      default: return <DashboardView cases={allCases}/>;
-    }
-  };
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        script.async = true;
+        script.onload = () => setIsXlsxLoaded(true);
+        document.body.appendChild(script);
+        return () => { if (document.body.contains(script)) document.body.removeChild(script); };
+    }, []);
 
-  const NavLink = ({ id, icon: Icon, label }) => (<button onClick={() => setActiveTab(id)} className={`flex items-center w-full text-left px-4 py-3 rounded-lg transition-colors ${activeTab === id ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}><Icon size={22} className="mr-4" /><span className="font-medium">{label}</span></button>);
-  
-  const notifBgColor = notification.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+    useEffect(() => {
+        if (notification.message) {
+            const timer = setTimeout(() => {
+                setNotification({ type: '', message: '' });
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
 
-  return (
-    <div className="flex h-screen bg-white font-sans">
-      <nav className="w-72 bg-gradient-to-b from-blue-900 to-gray-800 text-white flex flex-col p-4">
-        <div className="p-4 mb-8 text-center">
-            <h1 className="text-4xl font-bold tracking-wider text-white">
-                <span>A</span>
-                <span className="text-blue-400">P</span>
-                <span className="text-gray-400">I</span>
-                <span className="text-red-500">S</span>
-                <span>33</span>
-            </h1>
-            <p className="text-sm font-light tracking-[0.3em] text-gray-300 mt-1">— AGENCE —</p>
+
+    const renderContent = () => {
+        if (filteredCases) {
+            return (
+                <div>
+                    <button onClick={() => setFilteredCases(null)} className="flex items-center gap-2 mb-4 text-blue-600 hover:text-blue-800">
+                        <ChevronLeft size={20} /> Retour à la vue d'ensemble
+                    </button>
+                    <PaginatedTableView 
+                        title={filteredCases.title}
+                        data={filteredCases.data}
+                        columns={[
+                            {key: 'id', header: 'N° Dossier'},
+                            {key: 'compagnie', header: 'Compagnie'},
+                            {key: 'nature', header: 'Nature'},
+                            {key: 'montant', header: 'Montant'},
+                            {key: 'resultat', header: 'Résultat'}
+                        ]}
+                    />
+                </div>
+            );
+        }
+        
+        switch (activeTab) {
+            case 'dashboard':
+                return <DashboardView cases={allCases} onCardClick={(filter, title) => setFilteredCases({data: allCases.filter(c => filter === 'en-cours' ? !c.resultat : filter === 'clotures' ? c.resultat : c.resultat === 'Positif'), title})} />;
+            case 'cases':
+                return <CasesView cases={allCases} setCases={setAllCases} setNotification={setNotification} isXlsxLoaded={isXlsxLoaded} />;
+            case 'reports':
+                return <ReportsView cases={allCases} />;
+            case 'factures':
+                return <PaginatedTableView title="Vérification des Factures" data={allFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
+            case 'mairies':
+                return <PaginatedTableView title="Répertoire des Mairies" data={allMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
+            case 'jurisprudence':
+                return <JurisprudenceView />;
+            case 'arp':
+                return <ArpView />;
+            case 'settings':
+                return <div><h2 className="text-3xl font-bold text-gray-800">Paramètres</h2><p className="mt-4">Cette section est en cours de construction.</p></div>;
+            default:
+                return <DashboardView cases={allCases} onCardClick={(filter, title) => setFilteredCases({data: allCases.filter(c => filter === 'en-cours' ? !c.resultat : filter === 'clotures' ? c.resultat : c.resultat === 'Positif'), title})} />;
+        }
+    };
+
+    const NavLink = ({ id, icon: Icon, label }) => (
+        <button onClick={() => { setActiveTab(id); setFilteredCases(null); }} className={`flex items-center w-full text-left px-4 py-3 rounded-lg transition-colors ${activeTab === id ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}`}>
+            <Icon size={22} className="mr-4" />
+            <span className="font-medium">{label}</span>
+        </button>
+    );
+
+    const notifBgColor = notification.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+
+    return (
+        <div className="flex h-screen bg-white font-sans">
+            <nav className="w-72 bg-gradient-to-b from-blue-900 to-gray-800 text-white flex flex-col p-4">
+                <div className="p-4 mb-8 text-center">
+                    <h1 className="text-4xl font-bold tracking-wider text-white">
+                        <span>A</span>
+                        <span className="text-blue-400">P</span>
+                        <span className="text-gray-400">I</span>
+                        <span className="text-red-500">S</span>
+                        <span>33</span>
+                    </h1>
+                    <p className="text-sm font-light tracking-[0.3em] text-gray-300 mt-1">— AGENCE —</p>
+                </div>
+                <div className="flex-grow space-y-2">
+                    <NavLink id="dashboard" icon={LayoutDashboard} label="Vue d'ensemble" />
+                    <NavLink id="cases" icon={FolderKanban} label="Gestion des Dossiers" />
+                    <NavLink id="reports" icon={BarChart3} label="Analyse & Rapports" />
+                    <hr className="my-2 border-gray-700"/>
+                    <NavLink id="factures" icon={FileCheck} label="Vérif. Factures" />
+                    <NavLink id="mairies" icon={Landmark} label="Mairies" />
+                    <NavLink id="jurisprudence" icon={Gavel} label="Jurisprudence" />
+                    <NavLink id="arp" icon={Globe} label="ARP" />
+                </div>
+                <div>
+                    <NavLink id="settings" icon={Settings} label="Paramètres" />
+                </div>
+            </nav>
+            <main className="flex-1 flex flex-col relative bg-gray-50">
+                {notification.message && (
+                    <div className={`absolute top-4 right-4 ${notifBgColor} px-4 py-3 rounded-lg shadow-lg flex items-center z-50 animate-fade-in-down`}>
+                        <Info size={20} className="mr-3"/>
+                        <span className="block sm:inline">{notification.message}</span>
+                        <button onClick={() => setNotification({type:'', message:''})} className="ml-4 font-bold"><X size={16}/></button>
+                    </div>
+                )}
+                <header className="bg-white shadow-sm p-4 flex justify-between items-center">
+                    <div className="relative w-1/3">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <input type="text" placeholder="Rechercher un dossier, un assuré..." className="w-full bg-gray-100 border-transparent rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Bell size={24} className="text-gray-600" />
+                        <div className="flex items-center gap-2">
+                            <UserCircle size={32} className="text-gray-600" />
+                            <div>
+                                <p className="font-semibold text-sm text-gray-800">John Doe</p>
+                                <p className="text-xs text-gray-500">Enquêteur Principal</p>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <div className="flex-1 p-8 overflow-y-auto">
+                    {renderContent()}
+                </div>
+            </main>
         </div>
-        <div className="flex-grow space-y-2">
-          <NavLink id="dashboard" icon={LayoutDashboard} label="Vue d'ensemble" /><NavLink id="cases" icon={FolderKanban} label="Gestion des Dossiers" /><NavLink id="reports" icon={BarChart3} label="Analyse & Rapports" /><hr className="my-2 border-gray-700"/><NavLink id="factures" icon={FileCheck} label="Vérif. Factures" /><NavLink id="mairies" icon={Landmark} label="Mairies" /><NavLink id="jurisprudence" icon={Gavel} label="Jurisprudence" /><NavLink id="arp" icon={Globe} label="ARP" />
-        </div>
-        <div><NavLink id="settings" icon={Settings} label="Paramètres" /></div>
-      </nav>
-      <main className="flex-1 flex flex-col relative bg-gray-50">
-        {notification.message && (
-            <div className={`absolute top-4 right-4 ${notifBgColor} px-4 py-3 rounded-lg shadow-lg flex items-center z-50`}>
-                <Info size={20} className="mr-3"/>
-                <span className="block sm:inline">{notification.message}</span>
-                <button onClick={() => setNotification({type:'', message:''})} className="ml-4 font-bold">X</button>
-            </div>
-        )}
-        <header className="bg-white shadow-sm p-4 flex justify-between items-center">
-            <div className="relative w-1/3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} /><input type="text" placeholder="Rechercher un dossier, un assuré..." className="w-full bg-gray-100 border-transparent rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div>
-            <div className="flex items-center gap-4"><Bell size={24} className="text-gray-600" /><div className="flex items-center gap-2"><UserCircle size={32} className="text-gray-600" /><div><p className="font-semibold text-sm text-gray-800">John Doe</p><p className="text-xs text-gray-500">Enquêteur Principal</p></div></div></div>
-        </header>
-        <div className="flex-1 p-8 overflow-y-auto">{renderContent()}</div>
-      </main>
-    </div>
-  );
+    );
 }
