@@ -386,17 +386,16 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
-        if (!file || !isXlsxLoaded) return;
-
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = (evt) => {
             try {
                 const bstr = evt.target.result;
                 const wb = window.XLSX.read(bstr, { type: 'binary' });
-                const wsname = wb.SheetNames[0];
+                const wb = XLSX.read(bstr, { type: 'binary' });
                 const ws = wb.Sheets[wsname];
                 const data = window.XLSX.utils.sheet_to_json(ws);
-                // Basic validation and mapping
+                const data = XLSX.utils.sheet_to_json(ws);
                 const formattedData = data.map((row, index) => ({
                     id: row['id'] || `IMPORT-${index}`,
                     dateSaisine: row['dateSaisine'] || new Date().toISOString().split('T')[0],
