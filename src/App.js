@@ -886,8 +886,7 @@ export default function App() {
                                 <p className="text-xs text-gray-500">Enquêteur Principal</p>
                             </div>
                         </div>
-                    </div>
-                </header>
+                      </header>
                 <div className="flex-1 p-8 overflow-y-auto">
                     {renderContent()}
                 </div>
