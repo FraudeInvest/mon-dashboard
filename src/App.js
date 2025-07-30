@@ -392,11 +392,9 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
             try {
                 const bstr = evt.target.result;
                 const wb = XLSX.read(bstr, { type: 'binary' });
-                const wb = XLSX.read(bstr, { type: 'binary' });
                 const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
                 const data = XLSX.utils.sheet_to_json(ws);
-                + const data = XLSX.utils.sheet_to_json(ws);
                 // Basic validation and mapping
                 const formattedData = data.map((row, index) => ({
                     id: row['id'] || `IMPORT-${index}`,
