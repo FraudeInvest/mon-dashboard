@@ -975,7 +975,7 @@ export default function App() {
                         <Bell size={24} className="text-gray-600" />
                             <UserCircle size={32} className="text-gray-600" />
                             <div>
-                                <p className="font-semibold text-sm text-gray-800">John Doe</p>
+                                <p className="font-semibold text-sm text-gray-800">APIS33</p>
                                 <p className="text-xs text-gray-500">Enquêteur Principal</p>
                            </div>
                         </div>
