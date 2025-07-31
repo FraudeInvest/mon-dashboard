@@ -1,15 +1,20 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import * as XLSX from 'xlsx';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, FunnelChart, Funnel, LabelList, ScatterChart, Scatter, ZAxis } from 'recharts';
+import React from 'react';
 import {
-    LayoutDashboard, FolderKanban, BarChart3, Settings, Bell, UserCircle, Search, PlusCircle, Upload, FileDown,
-    FileCheck, Landmark, Gavel, Globe, ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock,
-    Sparkles, X, Info, Hash, Building, FileText, MapPin, Euro, ChevronDown, Edit, Trash2
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line,
+  ScatterChart, Scatter, ZAxis
+} from 'recharts';
+import {
+  LayoutDashboard, FolderKanban, BarChart3, Settings, Bell, UserCircle,
+  Search, PlusCircle, Upload, FileDown, FileCheck, Landmark, Gavel, Globe,
+  ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock,
+  Sparkles, X, Info, Hash, Building, FileText, MapPin, Euro, ChevronDown,
+  Edit, Trash2
 } from 'lucide-react';
 
-// --- DATA GENERATION SCRIPT (EXPANDED) ---
+// --- SCRIPT DE GÉNÉRATION DE DONNÉES ---
 const a_depts = [
-    { code: '75', name: 'Paris', fullName: 'Paris' },
+    { code: '75', name: 'Paris', fullName: 'Paris' }, { code: '92', name: 'Hauts-de-Seine', fullName: 'Hauts-de-Seine' }, { code: '93', name: 'Seine-Saint-Denis', fullName: 'Seine-Saint-Denis' }, { code: '94', name: 'Val-de-Marne', fullName: 'Val-de-Marne' },
     { code: '13', name: 'B-du-R', fullName: 'Bouches-du-Rhône' },
     { code: '69', name: 'Rhône', fullName: 'Rhône' },
     { code: '31', name: 'H-Garonne', fullName: 'Haute-Garonne' },
@@ -26,7 +31,13 @@ const a_depts = [
     { code: '83', name: 'Var', fullName: 'Var' },
     { code: '38', name: 'Isère', fullName: 'Isère' },
     { code: '21', name: 'Côte-d\'Or', fullName: 'Côte-d\'Or' },
-    { code: '49', name: 'M-et-L.', fullName: 'Maine-et-Loire' }
+    { code: '49', name: 'M-et-L.', fullName: 'Maine-et-Loire' },
+    { code: '84', name: 'Vaucluse', fullName: 'Vaucluse' },
+    { code: '57', name: 'Moselle', fullName: 'Moselle' },
+    { code: '77', name: 'Seine-et-Marne', fullName: 'Seine-et-Marne' },
+    { code: '78', name: 'Yvelines', fullName: 'Yvelines' },
+    { code: '91', name: 'Essonne', fullName: 'Essonne' },
+    { code: '95', name: 'Val-d\'Oise', fullName: 'Val-d\'Oise' }
 ];
 const a_compagnies = ["AXA", "MAIF", "GMF", "Allianz", "Groupama", "MACIF", "Matmut", "Crédit Agricole Assurances"];
 const a_natures = ["Vol", "Cambriolage", "Incendie", "Accident de la circulation", "Assurance de personne", "Dégât des eaux"];
@@ -139,77 +150,126 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => 
     );
 };
 
-// --- MAP COMPONENT ---
-const FranceMap = ({ data }) => {
-    const [tooltip, setTooltip] = useState({ visible: false, content: '', x: 0, y: 0 });
+// --- COMPOSANT CARTE DE FRANCE LEAFLET ---
+const LeafletFranceMap = ({ data, d3 }) => {
+    const [geojson, setGeojson] = React.useState(null);
+    const [filterNature, setFilterNature] = React.useState("TOUT");
+    const [filterCompagnie, setFilterCompagnie] = React.useState("TOUT");
+    const mapRef = React.useRef(null);
+    const geoJsonLayerRef = React.useRef(null);
 
-    const incidentsByDept = useMemo(() => {
-        return data.reduce((acc, c) => {
-            const code = c.departmentCode;
-            if (code) {
-                if (!acc[code]) {
-                    acc[code] = { count: 0, totalAmount: 0 };
-                }
-                acc[code].count += 1;
-                acc[code].totalAmount += c.montant;
-            }
-            return acc;
-        }, {});
-    }, [data]);
+    // Charger le GeoJSON une seule fois
+    React.useEffect(() => {
+        fetch("https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson")
+            .then(res => res.json())
+            .then(data => setGeojson(data))
+            .catch(err => console.error("Erreur chargement GeoJSON", err));
+    }, []);
 
-    const maxIncidents = Math.max(...Object.values(incidentsByDept).map(d => d.count), 0);
-
-    const interpolateColor = (color1, color2, factor) => {
-        let result = color1.slice();
-        for (let i = 0; i < 3; i++) {
-            result[i] = Math.round(result[i] + factor * (color2[i] - result[i]));
+    // Initialiser la carte Leaflet
+    React.useEffect(() => {
+        if (window.L && !mapRef.current) {
+            const map = window.L.map('leaflet-map').setView([46.5, 2.5], 6);
+            mapRef.current = map;
+            window.L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
         }
-        return result;
-    };
+        return () => {
+            if (mapRef.current) {
+                mapRef.current.remove();
+                mapRef.current = null;
+            }
+        };
+    }, []);
 
-    const getColor = (value) => {
-        if (value === 0) return '#E5E7EB';
-        const factor = value / (maxIncidents || 1);
-        const color = interpolateColor([199, 210, 254], [30, 58, 138], factor);
-        return `rgb(${color.join(',')})`;
-    };
+    // Mettre à jour la carte lorsque les données ou les filtres changent
+    React.useEffect(() => {
+        if (geojson && d3 && mapRef.current) {
+            // Filtrer les données
+            const filteredData = data.filter(row => {
+                const matchNature = filterNature === "TOUT" || row.nature === filterNature;
+                const matchCompagnie = filterCompagnie === "TOUT" || row.compagnie === filterCompagnie;
+                return matchNature && matchCompagnie;
+            });
 
-    const handleMouseMove = (e, deptFullName, stats) => {
-        setTooltip({ visible: true, content: `${deptFullName}: ${stats.count || 0} sinistre(s) - ${stats.totalAmount ? stats.totalAmount.toLocaleString('fr-FR') : 0} €`, x: e.pageX, y: e.pageY });
-    };
+            // Agréger les statistiques
+            const stats = {};
+            filteredData.forEach(({ departmentCode, montant }) => {
+                const code = departmentCode;
+                const value = Number(montant);
+                if (!stats[code]) stats[code] = { montantTotal: 0, count: 0 };
+                stats[code].montantTotal += value;
+                stats[code].count += 1;
+            });
+
+            const maxMontant = d3.max(Object.values(stats), d => d.montantTotal) || 0;
+            const colorScale = d3.scaleSequential()
+                .domain([0, maxMontant])
+                .interpolator(d3.interpolateTurbo);
+
+            const onEachFeature = (feature, layer) => {
+                const code = feature.properties.code;
+                const info = stats[code];
+                if (info) {
+                    layer.setStyle({
+                        fillColor: colorScale(info.montantTotal),
+                        weight: 1, color: "#000", fillOpacity: 0.9,
+                    });
+                } else {
+                    layer.setStyle({
+                        fillColor: "#f0f0f0",
+                        weight: 1, color: "#aaa", fillOpacity: 0.3,
+                    });
+                }
+                layer.bindTooltip(
+                    `<strong>${feature.properties.nom}</strong><br/>
+                     Sinistres: ${info?.count || 0}<br/>
+                     Montant total: ${(info?.montantTotal || 0).toLocaleString()} €`
+                );
+                layer.on({
+                    mouseover: e => e.target.setStyle({ weight: 2, color: "#333" }),
+                    mouseout: e => e.target.setStyle({ weight: 1, color: info ? "#000" : "#aaa" }),
+                });
+            };
+
+            // Supprimer l'ancienne couche si elle existe
+            if (geoJsonLayerRef.current) {
+                mapRef.current.removeLayer(geoJsonLayerRef.current);
+            }
+
+            // Ajouter la nouvelle couche
+            geoJsonLayerRef.current = window.L.geoJSON(geojson, { onEachFeature });
+            geoJsonLayerRef.current.addTo(mapRef.current);
+        }
+    }, [geojson, d3, data, filterNature, filterCompagnie]);
+    
+    if (!d3 || !window.L) {
+        return <div>Chargement des librairies de la carte...</div>;
+    }
+
+    const natures = Array.from(new Set(data.map(r => r.nature))).sort();
+    const compagnies = Array.from(new Set(data.map(r => r.compagnie))).sort();
 
     return (
-        <div className="relative">
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-1 p-2 bg-gray-100 rounded-lg">
-                {a_depts.map(dept => {
-                    const stats = incidentsByDept[dept.code] || { count: 0, totalAmount: 0 };
-                    const bgColor = getColor(stats.count);
-                    const textColor = (stats.count / (maxIncidents || 1)) > 0.5 ? 'white' : 'black';
-                    return (
-                        <div
-                            key={dept.code}
-                            className="p-1 text-center rounded-md text-xs flex flex-col items-center justify-center aspect-square transition-transform duration-200 hover:scale-110"
-                            style={{ backgroundColor: bgColor, color: textColor }}
-                            onMouseMove={(e) => handleMouseMove(e, dept.fullName, stats)}
-                            onMouseLeave={() => setTooltip({ visible: false, content: '', x: 0, y: 0 })}
-                        >
-                            <span className="text-[10px] sm:text-xs">{dept.name}</span>
-                            <span className="font-bold text-lg sm:text-xl">{stats.count}</span>
-                        </div>
-                    )
-                })}
+        <div>
+            <div className="flex flex-wrap justify-center gap-4 mb-4 p-4 bg-gray-100 rounded-lg">
+                <select value={filterNature} onChange={e => setFilterNature(e.target.value)} className="p-2 border rounded-md shadow-sm">
+                    <option value="TOUT">Tous types de sinistre</option>
+                    {natures.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <select value={filterCompagnie} onChange={e => setFilterCompagnie(e.target.value)} className="p-2 border rounded-md shadow-sm">
+                    <option value="TOUT">Toutes compagnies</option>
+                    {compagnies.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
             </div>
-            {tooltip.visible && (
-                <div className="absolute bg-black/70 text-white p-2 rounded-md text-sm pointer-events-none" style={{ top: tooltip.y - 30, left: tooltip.x + 10 }}>
-                    {tooltip.content}
-                </div>
-            )}
+            <div id="leaflet-map" style={{ height: "600px", width: "100%", borderRadius: '8px' }}></div>
         </div>
     );
 };
 
 
-// --- VIEWS / COMPONENTS ---
+// --- VUES / COMPOSANTS ---
 const DashboardView = ({ cases, onCardClick }) => {
     const casesInProgress = cases.filter(c => !c.resultat).length;
     const casesClosed = cases.filter(c => c.resultat).length;
@@ -248,7 +308,7 @@ const DashboardView = ({ cases, onCardClick }) => {
                                 <p className="font-semibold text-gray-700">{c.id} - {c.compagnie}</p>
                                 <p className="text-sm text-gray-500">{c.nature} - {c.adresse}</p>
                             </div>
-                            {getResultPill(c.resultat)}
+                           {getResultPill(c.resultat)}
                         </li>
                     ))}
                 </ul>
@@ -257,7 +317,7 @@ const DashboardView = ({ cases, onCardClick }) => {
     );
 }
 
-// --- FAKE GEMINI API CALL ---
+// --- FAUX APPEL API GEMINI ---
 const callGeminiAPI = (caseData) => {
     return new Promise(resolve => {
         setTimeout(() => {
@@ -273,24 +333,24 @@ const callGeminiAPI = (caseData) => {
                 recommendations
             };
             resolve(result);
-        }, 1500); // Simulate network delay
+        }, 1500); // Simuler le délai réseau
     });
 };
 
 const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = React.useState(1);
     const ITEMS_PER_PAGE = 10;
 
-    const [selectedIds, setSelectedIds] = useState([]);
+    const [selectedIds, setSelectedIds] = React.useState([]);
     const paginatedData = cases.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-    const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
-    const [isNewCaseModalOpen, setIsNewCaseModalOpen] = useState(false);
-    const [editingCase, setEditingCase] = useState(null);
-    const [selectedCase, setSelectedCase] = useState(null);
-    const [analysisResult, setAnalysisResult] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [newCaseData, setNewCaseData] = useState({
+    const [isAnalysisModalOpen, setIsAnalysisModalOpen] = React.useState(false);
+    const [isNewCaseModalOpen, setIsNewCaseModalOpen] = React.useState(false);
+    const [editingCase, setEditingCase] = React.useState(null);
+    const [selectedCase, setSelectedCase] = React.useState(null);
+    const [analysisResult, setAnalysisResult] = React.useState(null);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [newCaseData, setNewCaseData] = React.useState({
         numSinistre: '',
         compagnie: '',
         nature: '',
@@ -298,7 +358,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
         montant: ''
     });
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (editingCase) {
             setNewCaseData(editingCase);
             setIsNewCaseModalOpen(true);
@@ -317,7 +377,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
         if (e.target.checked) {
             setSelectedIds([...selectedIds, id]);
         } else {
-            setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
+           setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
         }
     };
 
@@ -336,7 +396,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
         setEditingCase(caseItem);
     };
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (selectedCase) {
             setIsLoading(true);
             setAnalysisResult(null);
@@ -361,11 +421,11 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
     const handleCaseSubmit = (e) => {
         e.preventDefault();
         if (editingCase) {
-            // Update existing case
+            // Mettre à jour le dossier existant
             setCases(cases.map(c => c.id === editingCase.id ? { ...c, ...newCaseData, montant: Number(newCaseData.montant) } : c));
             setNotification({ type: 'success', message: `Dossier ${editingCase.id} mis à jour.` });
         } else {
-            // Add new case
+            // Ajouter un nouveau dossier
             const newId = `2025-${String(cases.length + 1).padStart(3, '0')}`;
             const newCase = {
                 ...newCaseData,
@@ -386,25 +446,26 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file || !isXlsxLoaded) return;
+
         const reader = new FileReader();
         reader.onload = (evt) => {
             try {
                 const bstr = evt.target.result;
-                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wb = window.XLSX.read(bstr, { type: 'binary' });
                 const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
-                const data = XLSX.utils.sheet_to_json(ws);
-                // Basic validation and mapping
+                const data = window.XLSX.utils.sheet_to_json(ws);
+                // Validation et mappage de base
                 const formattedData = data.map((row, index) => ({
                     id: row['id'] || `IMPORT-${index}`,
                     dateSaisine: row['dateSaisine'] || new Date().toISOString().split('T')[0],
                     numSinistre: row['numSinistre'] || 'N/A',
-                    compagnie: row['compagnie'] || 'N/A',
-                    dateSinistre: row['dateSinistre'] || 'N/A',
-                    nature: row['nature'] || 'N/A',
-                    adresse: row['adresse'] || 'N/A',
-                    departmentCode: row['departmentCode'] || null,
+                   compagnie: row['compagnie'] || 'N/A',
+                   dateSinistre: row['dateSinistre'] || 'N/A',
+                   nature: row['nature'] || 'N/A',
+                   adresse: row['adresse'] || 'N/A',
+                   departmentCode: row['departmentCode'] || null,
                     montant: Number(row['montant']) || 0,
                     dateCloture: row['dateCloture'] || null,
                     resultat: row['resultat'] || null,
@@ -412,7 +473,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                 setCases(formattedData);
                 setNotification({ type: 'success', message: `Importation réussie ! ${formattedData.length} dossiers ont été chargés.` });
             } catch (error) {
-                console.error("Error reading file:", error);
+                console.error("Erreur de lecture du fichier:", error);
                 setNotification({ type: 'error', message: "Erreur lors de la lecture du fichier." });
             }
         };
@@ -421,14 +482,14 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
 
     const handleExport = () => {
         if (!isXlsxLoaded) {
-            setNotification({ type: 'error', message: "La librairie d'export n'est pas encore chargée." });
+           setNotification({ type: 'error', message: "La librairie d'export n'est pas encore chargée." });
             return;
         }
         const ws = window.XLSX.utils.json_to_sheet(cases);
         const wb = window.XLSX.utils.book_new();
         window.XLSX.utils.book_append_sheet(wb, ws, "Dossiers");
         window.XLSX.writeFile(wb, "export_dossiers.xlsx");
-        setNotification({ type: 'success', message: "Exportation réussie." });
+       setNotification({ type: 'success', message: "Exportation réussie." });
     };
 
     return (
@@ -493,7 +554,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                         </button>
                         <button onClick={() => setIsNewCaseModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">
                             <PlusCircle size={20}/> Nouveau Dossier
-                        </button>
+                       </button>
                     </div>
                 </div>
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -511,7 +572,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginatedData.map((c) => (
+                               {paginatedData.map((c) => (
                                     <tr key={c.id} className={`border-b border-gray-200 ${selectedIds.includes(c.id) ? 'bg-blue-50' : 'hover:bg-gray-50'}`}>
                                         <td className="p-4"><input type="checkbox" checked={selectedIds.includes(c.id)} onChange={(e) => handleSelectOne(e, c.id)} className="form-checkbox h-5 w-5 text-blue-600 rounded" /></td>
                                         <td className="p-4 font-medium text-gray-800">{c.id}</td>
@@ -536,7 +597,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
     );
 };
 
-const ReportsView = ({ cases }) => {
+const ReportsView = ({ cases, d3 }) => {
     const NEW_PALETTE = ['#2980B9', '#16A085', '#F39C12', '#E91E63', '#8E44AD', '#3498DB', '#1ABC9C'];
     const RADIAN = Math.PI / 180;
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
@@ -556,17 +617,17 @@ const ReportsView = ({ cases }) => {
         return "#" + (0x1000000 + (Math.round((t - R) * p) + R) * 0x10000 + (Math.round((t - G) * p) + G) * 0x100 + (Math.round((t - B) * p) + B)).toString(16).slice(1);
     };
 
-    const dataByNature = useMemo(() => { const counts = cases.reduce((acc, c) => { acc[c.nature] = (acc[c.nature] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, [cases]);
-    const dataByResult = useMemo(() => { const closed = cases.filter(c => c.resultat); const counts = closed.reduce((acc, c) => { acc[c.resultat] = (acc[c.resultat] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, [cases]);
-    const dataByCompany = useMemo(() => { const counts = cases.reduce((acc, c) => { acc[c.compagnie] = (acc[c.compagnie] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, Saisines: counts[key] })).sort((a, b) => b.Saisines - a.Saisines); }, [cases]);
-    const dataByMonth = useMemo(() => { const counts = cases.reduce((acc, c) => { const month = c.dateSaisine.substring(0, 7); acc[month] = (acc[month] || 0) + 1; return acc; }, {}); return Object.keys(counts).sort().map(key => ({ name: key, Dossiers: counts[key] })); }, [cases]);
+    const dataByNature = React.useMemo(() => { const counts = cases.reduce((acc, c) => { acc[c.nature] = (acc[c.nature] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, [cases]);
+    const dataByResult = React.useMemo(() => { const closed = cases.filter(c => c.resultat); const counts = closed.reduce((acc, c) => { acc[c.resultat] = (acc[c.resultat] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, value: counts[key] })); }, [cases]);
+    const dataByCompany = React.useMemo(() => { const counts = cases.reduce((acc, c) => { acc[c.compagnie] = (acc[c.compagnie] || 0) + 1; return acc; }, {}); return Object.keys(counts).map(key => ({ name: key, Saisines: counts[key] })).sort((a, b) => b.Saisines - a.Saisines); }, [cases]);
+    const dataByMonth = React.useMemo(() => { const counts = cases.reduce((acc, c) => { const month = c.dateSaisine.substring(0, 7); acc[month] = (acc[month] || 0) + 1; return acc; }, {}); return Object.keys(counts).sort().map(key => ({ name: key, Dossiers: counts[key] })); }, [cases]);
 
-    const dataResolutionTime = useMemo(() => {
+    const dataResolutionTime = React.useMemo(() => {
         const natureGroups = {};
         cases.filter(c => c.dateCloture).forEach(c => {
             const duration = (new Date(c.dateCloture) - new Date(c.dateSaisine)) / (1000 * 3600 * 24);
             if (!natureGroups[c.nature]) natureGroups[c.nature] = [];
-            natureGroups[c.nature].push(duration);
+           natureGroups[c.nature].push(duration);
         });
         return Object.keys(natureGroups).map(nature => ({
             name: nature,
@@ -574,14 +635,14 @@ const ReportsView = ({ cases }) => {
         }));
     }, [cases]);
 
-    const dataAmountVsDuration = useMemo(() => {
+    const dataAmountVsDuration = React.useMemo(() => {
         return cases.filter(c => c.dateCloture).map(c => ({
             montant: c.montant,
             duree: (new Date(c.dateCloture) - new Date(c.dateSaisine)) / (1000 * 3600 * 24)
         }));
     }, [cases]);
 
-    const dataResultsByCompany = useMemo(() => {
+    const dataResultsByCompany = React.useMemo(() => {
         const companyGroups = {};
         cases.forEach(c => {
             if (!companyGroups[c.compagnie]) companyGroups[c.compagnie] = { Positif: 0, Négatif: 0 };
@@ -594,18 +655,22 @@ const ReportsView = ({ cases }) => {
     return (
         <div>
             <h2 className="text-3xl font-bold text-gray-800 mb-6">Analyse & Rapports</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie data={dataByNature} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByNature.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={darkenColor(NEW_PALETTE[index % NEW_PALETTE.length], 0.2)} />)}</Pie>
-                            <Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByNature.map((entry, index) => <Cell key={`cell-main-${index}`} fill={NEW_PALETTE[index % NEW_PALETTE.length]} />)}</Pie>
-                            <Tooltip />
-                        </PieChart>
-                    </ResponsiveContainer>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                 <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="font-bold text-gray-800 mb-4">Cartographie des Sinistres</h3>
+                    <LeafletFranceMap data={cases} d3={d3} />
                 </div>
-                <div className="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="font-bold text-gray-800 mb-4">Répartition par Nature de Sinistre</h3>
+                   <ResponsiveContainer width="100%" height={300}>
+                       <PieChart>
+                           <Pie data={dataByNature} dataKey="value" cx="50%" cy="52%" outerRadius={100} isAnimationActive={false}>{dataByNature.map((entry, index) => <Cell key={`cell-shadow-${index}`} fill={darkenColor(NEW_PALETTE[index % NEW_PALETTE.length], 0.2)} />)}</Pie>
+                           <Pie data={dataByNature} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByNature.map((entry, index) => <Cell key={`cell-main-${index}`} fill={NEW_PALETTE[index % NEW_PALETTE.length]} />)}</Pie>
+                           <Tooltip />
+                        </PieChart>
+                   </ResponsiveContainer>
+                </div>
+                <div className="bg-white p-6 rounded-lg shadow-md">
                     <h3 className="font-bold text-gray-800 mb-4">Résultat Global</h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
@@ -613,21 +678,21 @@ const ReportsView = ({ cases }) => {
                             <Pie data={dataByResult} dataKey="value" nameKey="name" cx="50%" cy="50%" labelLine={false} label={renderCustomizedLabel} outerRadius={100}>{dataByResult.map((entry, index) => <Cell key={`cell-main-${index}`} fill={entry.name === 'Positif' ? '#16A085' : '#E91E63'} />)}</Pie>
                             <Tooltip />
                         </PieChart>
-                    </ResponsiveContainer>
+                   </ResponsiveContainer>
                 </div>
                 <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
                     <h3 className="font-bold text-gray-800 mb-4">Délai moyen de résolution par nature</h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={dataResolutionTime}>
-                            <defs><linearGradient id="colorPastel" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2980B9" stopOpacity={0.9}/><stop offset="95%" stopColor="#8E44AD" stopOpacity={0.6}/></linearGradient></defs>
+                           <defs><linearGradient id="colorPastel" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2980B9" stopOpacity={0.9}/><stop offset="95%" stopColor="#8E44AD" stopOpacity={0.6}/></linearGradient></defs>
                             <XAxis dataKey="name" />
                             <YAxis />
                             <Tooltip />
                             <Bar dataKey="Délai moyen (jours)" fill="url(#colorPastel)" />
                         </BarChart>
-                    </ResponsiveContainer>
+                   </ResponsiveContainer>
                 </div>
-                <div className="lg:col-span-4 bg-white p-6 rounded-lg shadow-md">
+                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
                     <h3 className="font-bold text-gray-800 mb-4">Évolution des saisines par mois</h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={dataByMonth} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -638,11 +703,7 @@ const ReportsView = ({ cases }) => {
                             <Legend />
                             <Line type="monotone" dataKey="Dossiers" stroke="#2980B9" strokeWidth={2} activeDot={{ r: 8 }} />
                         </LineChart>
-                    </ResponsiveContainer>
-                </div>
-                <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="font-bold text-gray-800 mb-4">Cartographie des Sinistres</h3>
-                    <FranceMap data={cases} />
+                   </ResponsiveContainer>
                 </div>
                 <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
                     <h3 className="font-bold text-gray-800 mb-4">Résultats par Compagnie</h3>
@@ -656,7 +717,7 @@ const ReportsView = ({ cases }) => {
                             <Bar dataKey="Positif" fill="#93C572" stackId="stack" />
                             <Bar dataKey="Négatif" fill="#DC2626" stackId="stack" />
                         </BarChart>
-                    </ResponsiveContainer>
+                   </ResponsiveContainer>
                 </div>
             </div>
         </div>
@@ -664,7 +725,7 @@ const ReportsView = ({ cases }) => {
 }
 
 const PaginatedTableView = ({ title, data, columns }) => {
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = React.useState(1);
     const ITEMS_PER_PAGE = 10;
     const paginatedData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     return (
@@ -673,9 +734,9 @@ const PaginatedTableView = ({ title, data, columns }) => {
             <div className="bg-white p-4 rounded-lg shadow-md overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="border-b-2 border-gray-200">
-                        <tr>{columns.map(col => <th key={col.key} className="p-3 text-sm font-semibold text-gray-600">{col.header}</th>)}</tr>
+                       <tr>{columns.map(col => <th key={col.key} className="p-3 text-sm font-semibold text-gray-600">{col.header}</th>)}</tr>
                     </thead>
-                    <tbody>{paginatedData.map((item, index) => (<tr key={index} className="border-b border-gray-200 hover:bg-gray-50">{columns.map(col => <td key={col.key} className="p-3 text-gray-600">{item[col.key]}</td>)}</tr>))}</tbody>
+                   <tbody>{paginatedData.map((item, index) => (<tr key={index} className="border-b border-gray-200 hover:bg-gray-50">{columns.map(col => <td key={col.key} className="p-3 text-gray-600">{item[col.key]}</td>)}</tr>))}</tbody>
                 </table>
                 <Pagination currentPage={currentPage} totalItems={data.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
             </div>
@@ -684,7 +745,7 @@ const PaginatedTableView = ({ title, data, columns }) => {
 };
 
 const JurisprudenceView = () => {
-    const [openItem, setOpenItem] = useState(null);
+    const [openItem, setOpenItem] = React.useState(null);
     const jurisprudenceData = [
         {
             category: "Recevabilité de la Preuve",
@@ -709,22 +770,22 @@ const JurisprudenceView = () => {
                 <h2 className="text-3xl font-bold text-gray-800">Jurisprudence</h2>
             </div>
             <div className="space-y-4">
-                {jurisprudenceData.map((category, catIndex) => (
+               {jurisprudenceData.map((category, catIndex) => (
                     <div key={catIndex} className="bg-white rounded-lg shadow-md overflow-hidden">
                         <h3 className="text-xl font-bold text-gray-800 p-4 bg-gray-50">{category.category}</h3>
                         <div className="divide-y">
-                            {category.cases.map((item, itemIndex) => (
+                           {category.cases.map((item, itemIndex) => (
                                 <div key={itemIndex}>
                                     <button onClick={() => setOpenItem(openItem === `${catIndex}-${itemIndex}` ? null : `${catIndex}-${itemIndex}`)} className="w-full flex justify-between items-center p-4 text-left font-semibold text-blue-800 hover:bg-blue-50">
-                                        <span>{item.ref}</span>
-                                        <ChevronDown className={`transform transition-transform ${openItem === `${catIndex}-${itemIndex}` ? 'rotate-180' : ''}`} />
+                                       <span>{item.ref}</span>
+                                       <ChevronDown className={`transform transition-transform ${openItem === `${catIndex}-${itemIndex}` ? 'rotate-180' : ''}`} />
                                     </button>
                                     {openItem === `${catIndex}-${itemIndex}` && (
                                         <div className="p-4 bg-gray-50 text-sm">
-                                            <p className="font-bold text-gray-700">Principe :</p>
-                                            <p className="mb-2 text-gray-600">{item.principle}</p>
-                                            <p className="font-bold text-gray-700">Implication pratique :</p>
-                                            <p className="text-gray-600">{item.implication}</p>
+                                           <p className="font-bold text-gray-700">Principe :</p>
+                                           <p className="mb-2 text-gray-600">{item.principle}</p>
+                                           <p className="font-bold text-gray-700">Implication pratique :</p>
+                                           <p className="text-gray-600">{item.implication}</p>
                                         </div>
                                     )}
                                 </div>
@@ -738,9 +799,9 @@ const JurisprudenceView = () => {
 };
 
 const ArpView = () => {
-    const [arpTab, setArpTab] = useState('france');
-    const allArpFrance = useMemo(() => generateArpFranceData(100), []);
-    const allArpMonde = useMemo(() => generateArpMondeData(100), []);
+    const [arpTab, setArpTab] = React.useState('france');
+    const allArpFrance = React.useMemo(() => generateArpFranceData(100), []);
+    const allArpMonde = React.useMemo(() => generateArpMondeData(100), []);
     return (
         <div>
             <h2 className="text-3xl font-bold text-gray-800 mb-6">ARP (Analyse Risques Particuliers)</h2>
@@ -754,27 +815,46 @@ const ArpView = () => {
     );
 };
 
-// --- MAIN APP ---
+// --- APPLICATION PRINCIPALE ---
 export default function App() {
-    const [activeTab, setActiveTab] = useState('dashboard');
-    const [allCases, setAllCases] = useState(() => generateCasesData(100));
-    const [notification, setNotification] = useState({ type: '', message: '' });
-    const [isXlsxLoaded, setIsXlsxLoaded] = useState(false);
-    const [filteredCases, setFilteredCases] = useState(null);
+    const [activeTab, setActiveTab] = React.useState('dashboard');
+    const [allCases, setAllCases] = React.useState(() => generateCasesData(200));
+    const [notification, setNotification] = React.useState({ type: '', message: '' });
+    const [libsLoaded, setLibsLoaded] = React.useState({ xlsx: false, d3: false, leaflet: false });
+    const [filteredCases, setFilteredCases] = React.useState(null);
 
-    const allFactures = useMemo(() => generateFacturesContacts(100), []);
-    const allMairies = useMemo(() => generateMairiesData(100), []);
+    const allFactures = React.useMemo(() => generateFacturesContacts(100), []);
+    const allMairies = React.useMemo(() => generateMairiesData(100), []);
 
-    useEffect(() => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-        script.async = true;
-        script.onload = () => setIsXlsxLoaded(true);
-        document.body.appendChild(script);
-        return () => { if (document.body.contains(script)) document.body.removeChild(script); };
+    React.useEffect(() => {
+        const loadScript = (src, key) => {
+            if (document.querySelector(`script[src="${src}"]`)) {
+                 setLibsLoaded(prev => ({ ...prev, [key]: true }));
+                 return;
+            }
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = () => setLibsLoaded(prev => ({ ...prev, [key]: true }));
+            document.body.appendChild(script);
+        };
+
+        const loadCss = (href) => {
+            if (document.querySelector(`link[href="${href}"]`)) return;
+            const link = document.createElement('link');
+            link.href = href;
+            link.rel = 'stylesheet';
+            document.head.appendChild(link);
+        };
+        
+        loadCss("https://unpkg.com/leaflet@1.7.1/dist/leaflet.css");
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'xlsx');
+        loadScript('https://d3js.org/d3.v7.min.js', 'd3');
+        loadScript("https://unpkg.com/leaflet@1.7.1/dist/leaflet.js", 'leaflet');
+
     }, []);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (notification.message) {
             const timer = setTimeout(() => {
                 setNotification({ type: '', message: '' });
@@ -792,8 +872,8 @@ export default function App() {
                         <ChevronLeft size={20} /> Retour à la vue d'ensemble
                     </button>
                     <PaginatedTableView 
-                        title={filteredCases.title}
-                        data={filteredCases.data}
+                       title={filteredCases.title}
+                       data={filteredCases.data}
                         columns={[
                             {key: 'id', header: 'N° Dossier'},
                             {key: 'compagnie', header: 'Compagnie'},
@@ -810,9 +890,9 @@ export default function App() {
             case 'dashboard':
                 return <DashboardView cases={allCases} onCardClick={(filter, title) => setFilteredCases({data: allCases.filter(c => filter === 'en-cours' ? !c.resultat : filter === 'clotures' ? c.resultat : c.resultat === 'Positif'), title})} />;
             case 'cases':
-                return <CasesView cases={allCases} setCases={setAllCases} setNotification={setNotification} isXlsxLoaded={isXlsxLoaded} />;
+                return <CasesView cases={allCases} setCases={setAllCases} setNotification={setNotification} isXlsxLoaded={libsLoaded.xlsx} />;
             case 'reports':
-                return <ReportsView cases={allCases} />;
+                return <ReportsView cases={allCases} d3={libsLoaded.d3 ? window.d3 : null} />;
             case 'factures':
                 return <PaginatedTableView title="Vérification des Factures" data={allFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
             case 'mairies':
@@ -842,11 +922,11 @@ export default function App() {
             <nav className="w-72 bg-gradient-to-b from-blue-900 to-gray-800 text-white flex flex-col p-4">
                 <div className="p-4 mb-8 text-center">
                     <h1 className="text-4xl font-bold tracking-wider text-white">
-                        <span>A</span>
+                       <span>A</span>
                         <span className="text-blue-400">P</span>
                         <span className="text-gray-400">I</span>
                         <span className="text-red-500">S</span>
-                        <span>33</span>
+                       <span>33</span>
                     </h1>
                     <p className="text-sm font-light tracking-[0.3em] text-gray-300 mt-1">— AGENCE —</p>
                 </div>
@@ -879,18 +959,17 @@ export default function App() {
                     </div>
                     <div className="flex items-center gap-4">
                         <Bell size={24} className="text-gray-600" />
-
                             <UserCircle size={32} className="text-gray-600" />
                             <div>
                                 <p className="font-semibold text-sm text-gray-800">John Doe</p>
                                 <p className="text-xs text-gray-500">Enquêteur Principal</p>
-                            </div>
+                           </div>
                         </div>
-                      </header>
+                    </header>
                 <div className="flex-1 p-8 overflow-y-auto">
                     {renderContent()}
-                </div>
-            </main>
+               </div>
+           </main>
         </div>
     );
 }
