@@ -446,7 +446,16 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
-        if (!file || !isXlsxLoaded) return;
+        if (!file) {
+            setNotification({ type: 'error', message: "Veuillez sélectionner un fichier Excel (.xlsx ou .xls)" });
+            return;
+        }
+
+        const allowedExtensions = /\.(xlsx|xls)$/i;
+        if (!allowedExtensions.test(file.name)) {
+            setNotification({ type: 'error', message: "Format de fichier non pris en charge. Veuillez choisir un fichier .xlsx ou .xls" });
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = (evt) => {
@@ -455,8 +464,13 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                 const wb = window.XLSX.read(bstr, { type: 'binary' });
                 const wsname = wb.SheetNames[0];
                 const ws = wb.Sheets[wsname];
-                const data = window.XLSX.utils.sheet_to_json(ws);
-                // Validation et mappage de base
+                const data = window.XLSX.utils.sheet_to_json(ws, { raw: false });
+
+                if (data.length === 0) {
+                    setNotification({ type: 'error', message: "Le fichier est vide ou mal formaté." });
+                    return;
+                }
+                
                 const formattedData = data.map((row, index) => ({
                     id: row['id'] || `IMPORT-${index}`,
                     dateSaisine: row['dateSaisine'] || new Date().toISOString().split('T')[0],
@@ -473,8 +487,8 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                 setCases(formattedData);
                 setNotification({ type: 'success', message: `Importation réussie ! ${formattedData.length} dossiers ont été chargés.` });
             } catch (error) {
-                console.error("Erreur de lecture du fichier:", error);
-                setNotification({ type: 'error', message: "Erreur lors de la lecture du fichier." });
+                setNotification({ type: 'error', message: "Erreur lors de la lecture du fichier. Vérifiez son contenu." });
+                console.error("Erreur lecture fichier : ", error);
             }
         };
         reader.readAsBinaryString(file);
