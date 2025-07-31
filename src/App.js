@@ -758,7 +758,7 @@ const PaginatedTableView = ({ title, data, columns }) => {
     );
 };
 
-const JurisprudenceView = () => {
+const JurisprudenceView = ({ searchTerm }) => {
     const [openItem, setOpenItem] = React.useState(null);
     const jurisprudenceData = [
         {
@@ -777,6 +777,21 @@ const JurisprudenceView = () => {
         }
     ];
 
+    const filteredJurisprudenceData = React.useMemo(() => {
+        if (!searchTerm) return jurisprudenceData;
+        const lowercasedFilter = searchTerm.toLowerCase();
+        return jurisprudenceData
+            .map(category => ({
+                ...category,
+                cases: category.cases.filter(item =>
+                    Object.values(item).some(value =>
+                        String(value).toLowerCase().includes(lowercasedFilter)
+                    )
+                )
+            }))
+            .filter(category => category.cases.length > 0);
+    }, [searchTerm]);
+
     return (
         <div>
             <div className="flex items-center gap-3 mb-6">
@@ -784,7 +799,7 @@ const JurisprudenceView = () => {
                 <h2 className="text-3xl font-bold text-gray-800">Jurisprudence</h2>
             </div>
             <div className="space-y-4">
-               {jurisprudenceData.map((category, catIndex) => (
+               {filteredJurisprudenceData.map((category, catIndex) => (
                     <div key={catIndex} className="bg-white rounded-lg shadow-md overflow-hidden">
                         <h3 className="text-xl font-bold text-gray-800 p-4 bg-gray-50">{category.category}</h3>
                         <div className="divide-y">
@@ -812,10 +827,8 @@ const JurisprudenceView = () => {
     );
 };
 
-const ArpView = () => {
+const ArpView = ({ arpFranceData, arpMondeData }) => {
     const [arpTab, setArpTab] = React.useState('france');
-    const allArpFrance = React.useMemo(() => generateArpFranceData(100), []);
-    const allArpMonde = React.useMemo(() => generateArpMondeData(100), []);
     return (
         <div>
             <h2 className="text-3xl font-bold text-gray-800 mb-6">ARP (Analyse Risques Particuliers)</h2>
@@ -823,8 +836,8 @@ const ArpView = () => {
                 <button onClick={() => setArpTab('france')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'france' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>France</button>
                 <button onClick={() => setArpTab('monde')} className={`py-2 px-4 text-sm font-medium ${arpTab === 'monde' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'}`}>Monde</button>
             </div>
-            {arpTab === 'france' && <PaginatedTableView title="" data={allArpFrance} columns={[{key: 'agence', header: 'Agence'}, {key: 'identite', header: 'Identité'}, {key: 'commune', header: 'Commune'}, {key: 'mail', header: 'Mail'}]} />}
-            {arpTab === 'monde' && <PaginatedTableView title="" data={allArpMonde} columns={[{key: 'pays', header: 'Pays'}, {key: 'agence', header: 'Agence'}, {key: 'identite', header: 'Identité'}, {key: 'mail', header: 'Mail'}, {key: 'langue', header: 'Langue'}]} />}
+            {arpTab === 'france' && <PaginatedTableView title="" data={arpFranceData} columns={[{key: 'agence', header: 'Agence'}, {key: 'identite', header: 'Identité'}, {key: 'commune', header: 'Commune'}, {key: 'mail', header: 'Mail'}]} />}
+            {arpTab === 'monde' && <PaginatedTableView title="" data={arpMondeData} columns={[{key: 'pays', header: 'Pays'}, {key: 'agence', header: 'Agence'}, {key: 'identite', header: 'Identité'}, {key: 'mail', header: 'Mail'}, {key: 'langue', header: 'Langue'}]} />}
         </div>
     );
 };
@@ -836,9 +849,12 @@ export default function App() {
     const [notification, setNotification] = React.useState({ type: '', message: '' });
     const [libsLoaded, setLibsLoaded] = React.useState({ xlsx: false, d3: false, leaflet: false });
     const [filteredCases, setFilteredCases] = React.useState(null);
+    const [searchTerm, setSearchTerm] = React.useState('');
 
     const allFactures = React.useMemo(() => generateFacturesContacts(100), []);
     const allMairies = React.useMemo(() => generateMairiesData(100), []);
+    const allArpFrance = React.useMemo(() => generateArpFranceData(100), []);
+    const allArpMonde = React.useMemo(() => generateArpMondeData(100), []);
 
     React.useEffect(() => {
         const loadScript = (src, key) => {
@@ -877,6 +893,40 @@ export default function App() {
         }
     }, [notification]);
 
+    const genericFilter = (data, term) => {
+        if (!term) return data;
+        const lowercasedTerm = term.toLowerCase();
+        return data.filter(item => 
+            Object.values(item).some(value => 
+                String(value).toLowerCase().includes(lowercasedTerm)
+            )
+        );
+    };
+
+    const filteredAllCases = React.useMemo(() => {
+        if (!searchTerm) return allCases;
+        const lowercasedTerm = searchTerm.toLowerCase();
+
+        // Spécifiquement pour la recherche par année sur les dossiers
+        if (/^\d{4}$/.test(lowercasedTerm)) {
+            return allCases.filter(item =>
+                (item.dateSaisine && item.dateSaisine.startsWith(lowercasedTerm)) ||
+                (item.id && item.id.startsWith(lowercasedTerm))
+            );
+        }
+
+        // Recherche générique pour les autres termes
+        return allCases.filter(item =>
+            Object.values(item).some(value =>
+                String(value).toLowerCase().includes(lowercasedTerm)
+            )
+        );
+    }, [allCases, searchTerm]);
+    
+    const filteredAllFactures = React.useMemo(() => genericFilter(allFactures, searchTerm), [allFactures, searchTerm]);
+    const filteredAllMairies = React.useMemo(() => genericFilter(allMairies, searchTerm), [allMairies, searchTerm]);
+    const filteredAllArpFrance = React.useMemo(() => genericFilter(allArpFrance, searchTerm), [allArpFrance, searchTerm]);
+    const filteredAllArpMonde = React.useMemo(() => genericFilter(allArpMonde, searchTerm), [allArpMonde, searchTerm]);
 
     const renderContent = () => {
         if (filteredCases) {
@@ -904,17 +954,17 @@ export default function App() {
             case 'dashboard':
                 return <DashboardView cases={allCases} onCardClick={(filter, title) => setFilteredCases({data: allCases.filter(c => filter === 'en-cours' ? !c.resultat : filter === 'clotures' ? c.resultat : c.resultat === 'Positif'), title})} />;
             case 'cases':
-                return <CasesView cases={allCases} setCases={setAllCases} setNotification={setNotification} isXlsxLoaded={libsLoaded.xlsx} />;
+                return <CasesView cases={filteredAllCases} setCases={setAllCases} setNotification={setNotification} isXlsxLoaded={libsLoaded.xlsx} />;
             case 'reports':
                 return <ReportsView cases={allCases} d3={libsLoaded.d3 ? window.d3 : null} />;
             case 'factures':
-                return <PaginatedTableView title="Vérification des Factures" data={allFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
+                return <PaginatedTableView title="Vérification des Factures" data={filteredAllFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
             case 'mairies':
-                return <PaginatedTableView title="Répertoire des Mairies" data={allMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
+                return <PaginatedTableView title="Répertoire des Mairies" data={filteredAllMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
             case 'jurisprudence':
-                return <JurisprudenceView />;
+                return <JurisprudenceView searchTerm={searchTerm} />;
             case 'arp':
-                return <ArpView />;
+                return <ArpView arpFranceData={filteredAllArpFrance} arpMondeData={filteredAllArpMonde} />;
             case 'settings':
                 return <div><h2 className="text-3xl font-bold text-gray-800">Paramètres</h2><p className="mt-4">Cette section est en cours de construction.</p></div>;
             default:
@@ -930,6 +980,8 @@ export default function App() {
     );
 
     const notifBgColor = notification.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+    const tabsWithSearchBar = ['cases', 'factures', 'mairies', 'jurisprudence', 'arp'];
+    const showSearchBar = tabsWithSearchBar.includes(activeTab);
 
     return (
         <div className="flex h-screen bg-white font-sans">
@@ -966,11 +1018,19 @@ export default function App() {
                         <button onClick={() => setNotification({type:'', message:''})} className="ml-4 font-bold"><X size={16}/></button>
                     </div>
                 )}
-                <header className="bg-white shadow-sm p-4 flex justify-between items-center">
-                    <div className="relative w-1/3">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input type="text" placeholder="Rechercher un dossier, un assuré..." className="w-full bg-gray-100 border-transparent rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                    </div>
+                <header className={`bg-white shadow-sm p-4 flex items-center ${showSearchBar ? 'justify-between' : 'justify-end'}`}>
+                    {showSearchBar && (
+                       <div className="relative w-1/3">
+                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                           <input 
+                                type="text" 
+                                placeholder="Rechercher..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-gray-100 border-transparent rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                            />
+                       </div>
+                    )}
                     <div className="flex items-center gap-4">
                         <Bell size={24} className="text-gray-600" />
                             <UserCircle size={32} className="text-gray-600" />
