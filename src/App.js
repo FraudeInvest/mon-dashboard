@@ -341,6 +341,10 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
     const [currentPage, setCurrentPage] = React.useState(1);
     const ITEMS_PER_PAGE = 10;
 
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [cases]);
+
     const [selectedIds, setSelectedIds] = React.useState([]);
     const paginatedData = cases.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
@@ -741,6 +745,11 @@ const ReportsView = ({ cases, d3 }) => {
 const PaginatedTableView = ({ title, data, columns }) => {
     const [currentPage, setCurrentPage] = React.useState(1);
     const ITEMS_PER_PAGE = 10;
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [data]);
+
     const paginatedData = data.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
     return (
         <div>
@@ -1035,7 +1044,7 @@ export default function App() {
                         <Bell size={24} className="text-gray-600" />
                             <UserCircle size={32} className="text-gray-600" />
                             <div>
-                                <p className="font-semibold text-sm text-gray-800">APIS33</p>
+                                <p className="font-semibold text-sm text-gray-800">APIS_33</p>
                                 <p className="text-xs text-gray-500">Enquêteur Principal</p>
                            </div>
                         </div>
