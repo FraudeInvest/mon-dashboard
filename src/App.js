@@ -9,10 +9,10 @@ import {
   Search, PlusCircle, Upload, FileDown, FileCheck, Landmark, Gavel, Globe,
   ChevronLeft, ChevronRight, FolderClock, FolderCheck, Percent, Clock,
   Sparkles, X, Info, Hash, Building, FileText, MapPin, Euro, ChevronDown,
-  Edit, Trash2
+  Edit, Trash2, LogOut, Phone, Mail
 } from 'lucide-react';
 
-// --- SCRIPT DE GÉNÉRATION DE DONNÉES ---
+// --- SCRIPT DE GÉNÉRATION DE DONNÉES (POUR L'EXEMPLE) ---
 const a_depts = [
     { code: '75', name: 'Paris', fullName: 'Paris' }, { code: '92', name: 'Hauts-de-Seine', fullName: 'Hauts-de-Seine' }, { code: '93', name: 'Seine-Saint-Denis', fullName: 'Seine-Saint-Denis' }, { code: '94', name: 'Val-de-Marne', fullName: 'Val-de-Marne' },
     { code: '13', name: 'B-du-R', fullName: 'Bouches-du-Rhône' },
@@ -57,7 +57,7 @@ const generateCasesData = (count) => Array.from({ length: count }, (_, i) => {
     const isClotured = Math.random() > 0.4;
     const dept = getRandom(a_depts);
     return {
-        id: `2025-${String(i + 1).padStart(3, '0')}`,
+        id: `${dateSaisine.getFullYear()}-${String(i + 1).padStart(3, '0')}`,
         dateSaisine: dateSaisine.toISOString().split('T')[0],
         numSinistre: `SIN-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
         compagnie: getRandom(a_compagnies),
@@ -71,14 +71,16 @@ const generateCasesData = (count) => Array.from({ length: count }, (_, i) => {
     };
 });
 
-const generateFacturesContacts = (count) => Array.from({ length: count }, () => {
+const generateFacturesContacts = (count) => Array.from({ length: count }, (_, i) => {
     const enseigne = getRandom(a_enseignes);
     const ville = getRandom(a_depts).name;
     return {
+        id: `FACT-${Date.now()}-${i}`,
         enseigne: `${enseigne} ${ville}`,
         mail1: `contact@${enseigne.split(' ')[0].toLowerCase()}.fr`,
         mail2: `verif@${enseigne.split(' ')[0].toLowerCase()}.fr`,
-        contact: `Service Client`,
+        contact: `${getRandom(a_prenoms)} ${getRandom(a_noms)}`,
+        telephone: `0${randomNum(1, 7)}${String(randomNum(0, 99999999)).padStart(8, '0').slice(0, 8).replace(/(\d{2})/g, ' $1').trim()}`,
         observations: Math.random() > 0.5 ? 'Réponse rapide.' : 'Nécessite une preuve d\'achat.',
     };
 });
@@ -158,7 +160,6 @@ const LeafletFranceMap = ({ data, d3 }) => {
     const mapRef = React.useRef(null);
     const geoJsonLayerRef = React.useRef(null);
 
-    // Charger le GeoJSON une seule fois
     React.useEffect(() => {
         fetch("https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements.geojson")
             .then(res => res.json())
@@ -166,7 +167,6 @@ const LeafletFranceMap = ({ data, d3 }) => {
             .catch(err => console.error("Erreur chargement GeoJSON", err));
     }, []);
 
-    // Initialiser la carte Leaflet
     React.useEffect(() => {
         if (window.L && !mapRef.current) {
             const map = window.L.map('leaflet-map').setView([46.5, 2.5], 6);
@@ -183,17 +183,14 @@ const LeafletFranceMap = ({ data, d3 }) => {
         };
     }, []);
 
-    // Mettre à jour la carte lorsque les données ou les filtres changent
     React.useEffect(() => {
         if (geojson && d3 && mapRef.current) {
-            // Filtrer les données
             const filteredData = data.filter(row => {
                 const matchNature = filterNature === "TOUT" || row.nature === filterNature;
                 const matchCompagnie = filterCompagnie === "TOUT" || row.compagnie === filterCompagnie;
                 return matchNature && matchCompagnie;
             });
 
-            // Agréger les statistiques
             const stats = {};
             filteredData.forEach(({ departmentCode, montant }) => {
                 const code = departmentCode;
@@ -233,12 +230,10 @@ const LeafletFranceMap = ({ data, d3 }) => {
                 });
             };
 
-            // Supprimer l'ancienne couche si elle existe
             if (geoJsonLayerRef.current) {
                 mapRef.current.removeLayer(geoJsonLayerRef.current);
             }
 
-            // Ajouter la nouvelle couche
             geoJsonLayerRef.current = window.L.geoJSON(geojson, { onEachFeature });
             geoJsonLayerRef.current.addTo(mapRef.current);
         }
@@ -275,6 +270,21 @@ const DashboardView = ({ cases, onCardClick }) => {
     const casesClosed = cases.filter(c => c.resultat).length;
     const positiveResults = cases.filter(c => c.resultat === 'Positif').length;
     const positiveRate = casesClosed > 0 ? ((positiveResults / casesClosed) * 100).toFixed(0) : 0;
+    
+    const averageInvestigationTime = React.useMemo(() => {
+        const closedCasesWithDates = cases.filter(c => c.dateSaisine && c.dateCloture);
+        if (closedCasesWithDates.length === 0) {
+            return "N/A";
+        }
+        const totalDuration = closedCasesWithDates.reduce((acc, c) => {
+            const startDate = new Date(c.dateSaisine);
+            const endDate = new Date(c.dateCloture);
+            const duration = (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+            return acc + duration;
+        }, 0);
+        const averageDuration = Math.round(totalDuration / closedCasesWithDates.length);
+        return `${averageDuration} jours`;
+    }, [cases]);
 
     const StatCard = ({ title, value, icon: Icon, colorClass, onClick }) => (
         <button onClick={onClick} disabled={!onClick} className={`p-6 rounded-lg shadow-md text-white text-left w-full transition-transform duration-200 hover:scale-105 ${colorClass} ${onClick ? 'cursor-pointer' : 'cursor-default'}`}>
@@ -297,7 +307,7 @@ const DashboardView = ({ cases, onCardClick }) => {
                 <StatCard title="Dossiers en cours" value={casesInProgress} icon={FolderClock} colorClass="bg-blue-500" onClick={() => onCardClick('en-cours', 'Dossiers en cours')} />
                 <StatCard title="Dossiers clôturés" value={casesClosed} icon={FolderCheck} colorClass="bg-green-500" onClick={() => onCardClick('clotures', 'Dossiers clôturés')} />
                 <StatCard title="Résultat Positif (global)" value={`${positiveRate}%`} icon={Percent} colorClass="bg-purple-500" onClick={() => onCardClick('positif', 'Dossiers avec résultat positif')} />
-                <StatCard title="Délai moyen d'enquête" value="28 jours" icon={Clock} colorClass="bg-orange-500" />
+                <StatCard title="Délai moyen d'enquête" value={averageInvestigationTime} icon={Clock} colorClass="bg-orange-500" />
             </div>
             <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
                 <h3 className="font-bold text-gray-800 mb-4">Dossiers Récents</h3>
@@ -317,25 +327,51 @@ const DashboardView = ({ cases, onCardClick }) => {
     );
 }
 
-// --- FAUX APPEL API GEMINI ---
-const callGeminiAPI = (caseData) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const riskLevel = caseData.montant > 50000 ? 'Élevé' : 'Moyen';
-            const summary = `Le dossier concerne un sinistre de type "${caseData.nature}" déclaré à ${caseData.adresse} pour un montant de ${caseData.montant.toLocaleString('fr-FR')} €.`;
-            const analysis = `Le montant déclaré est significatif. Les sinistres de type "${caseData.nature}" dans cette zone présentent un historique de fraude modéré. Aucun lien direct avec des réseaux de fraude connus n'a été établi à ce stade.`;
-            const recommendations = `1. Vérifier l'authenticité des factures fournies.\n2. Mener un entretien approfondi avec l'assuré.\n3. Envisager une enquête de voisinage si des incohérences apparaissent.`;
+// --- APPEL À L'API GEMINI ---
+const callGeminiAPI = async (prompt, schema) => {
+    const apiKey = ""; // La clé est gérée par l'environnement
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
-            const result = {
-                summary,
-                riskLevel,
-                analysis,
-                recommendations
-            };
-            resolve(result);
-        }, 1500); // Simuler le délai réseau
-    });
+    const payload = {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+    };
+
+    if (schema) {
+        payload.generationConfig = {
+            responseMimeType: "application/json",
+            responseSchema: schema,
+        };
+    }
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error("Erreur API:", response.status, errorBody);
+            throw new Error(`Erreur de l'API Gemini: ${response.status}`);
+        }
+
+        const result = await response.json();
+        const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!text) {
+            console.error("Réponse inattendue de l'API:", result);
+            throw new Error("Aucun contenu textuel dans la réponse de l'API.");
+        }
+        
+        return schema ? JSON.parse(text) : text;
+
+    } catch (error) {
+        console.error("Erreur lors de l'appel à l'API Gemini:", error);
+        throw error;
+    }
 };
+
 
 const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
     const [currentPage, setCurrentPage] = React.useState(1);
@@ -400,20 +436,31 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
         setEditingCase(caseItem);
     };
 
-    React.useEffect(() => {
-        if (selectedCase) {
-            setIsLoading(true);
-            setAnalysisResult(null);
-            callGeminiAPI(selectedCase).then(result => {
-                setAnalysisResult(result);
-                setIsLoading(false);
-            });
-        }
-    }, [selectedCase]);
-
-    const handleAnalyseClick = (caseItem) => {
+    const handleAnalyseClick = async (caseItem) => {
         setSelectedCase(caseItem);
         setIsAnalysisModalOpen(true);
+        setIsLoading(true);
+        setAnalysisResult(null);
+
+        const prompt = `Analyse ce dossier de sinistre et fournis un résumé, un niveau de risque (Élevé, Moyen, ou Faible), une analyse détaillée, et des actions recommandées. Voici les données du dossier : ${JSON.stringify(caseItem)}`;
+        const schema = {
+            type: "OBJECT",
+            properties: {
+                summary: { type: "STRING", description: "Bref résumé du sinistre." },
+                riskLevel: { type: "STRING", description: "Niveau de risque estimé (Élevé, Moyen, Faible)." },
+                analysis: { type: "STRING", description: "Analyse détaillée des points de vigilance." },
+                recommendations: { type: "STRING", description: "Liste d'actions recommandées, séparées par des retours à la ligne." }
+            }
+        };
+
+        try {
+            const result = await callGeminiAPI(prompt, schema);
+            setAnalysisResult(result);
+        } catch (error) {
+            setAnalysisResult({ summary: "Erreur", riskLevel: "Inconnu", analysis: "L'analyse a échoué. Veuillez réessayer.", recommendations: "Aucune" });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const closeAnalysisModal = () => {
@@ -516,7 +563,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl">
                         <div className="flex justify-between items-center border-b pb-3 mb-4">
-                            <h3 className="text-xl font-bold text-gray-800">Analyse IA Gemini - Dossier {selectedCase?.id}</h3>
+                            <h3 className="text-xl font-bold text-gray-800">✨ Analyse IA Gemini - Dossier {selectedCase?.id}</h3>
                             <button onClick={closeAnalysisModal} className="text-gray-500 hover:text-gray-800"><X size={24} /></button>
                         </div>
                         {isLoading && <div className="flex justify-center items-center h-48"><div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div></div>}
@@ -575,6 +622,12 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                        </button>
                     </div>
                 </div>
+                {cases.length === 0 ? (
+                     <div className="text-center p-10 bg-gray-100 rounded-lg">
+                        <h3 className="text-xl font-semibold text-gray-700">Aucun dossier trouvé.</h3>
+                        <p className="text-gray-500 mt-2">Commencez par importer un fichier Excel pour visualiser vos données.</p>
+                    </div>
+                ) : (
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
@@ -610,6 +663,7 @@ const CasesView = ({ cases, setCases, setNotification, isXlsxLoaded }) => {
                     </div>
                     <Pagination currentPage={currentPage} totalItems={cases.length} itemsPerPage={ITEMS_PER_PAGE} onPageChange={setCurrentPage} />
                 </div>
+                )}
             </div>
         </>
     );
@@ -851,16 +905,109 @@ const ArpView = ({ arpFranceData, arpMondeData }) => {
     );
 };
 
+// --- COMPOSANT DE CONNEXION ---
+const LoginView = ({ onLogin, onSignup, setNotification }) => {
+    const [isLogin, setIsLogin] = React.useState(true);
+    const [email, setEmail] = React.useState('');
+    const [password, setPassword] = React.useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (isLogin) {
+            onLogin(email, password);
+        } else {
+            onSignup(email, password);
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-center h-screen bg-gray-100">
+            <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
+                <div className="text-center">
+                    <h1 className="text-5xl font-bold tracking-wider text-gray-800 mb-4">
+                        <span>APIS </span>
+                        <span className="text-red-500">33</span>
+                    </h1>
+                    <p className="mt-2 text-sm text-gray-600">{isLogin ? "Connectez-vous à votre compte" : "Créez un nouveau compte"}</p>
+                </div>
+                <form className="space-y-6" onSubmit={handleSubmit}>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Adresse e-mail"
+                        required
+                        className="w-full px-4 py-2 text-gray-700 bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Mot de passe"
+                        required
+                        className="w-full px-4 py-2 text-gray-700 bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button type="submit" className="w-full py-3 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                        {isLogin ? "Se connecter" : "S'inscrire"}
+                    </button>
+                </form>
+                <p className="text-sm text-center text-gray-600">
+                    {isLogin ? "Vous n'avez pas de compte ?" : "Vous avez déjà un compte ?"}
+                    <button onClick={() => setIsLogin(!isLogin)} className="ml-1 font-medium text-blue-600 hover:underline">
+                        {isLogin ? "S'inscrire" : "Se connecter"}
+                    </button>
+                </p>
+            </div>
+        </div>
+    );
+};
+
+// --- VUE D'IMPORTATION INITIALE ---
+const InitialImportView = ({ handleImport }) => {
+    const fileInputRef = React.useRef(null);
+
+    const onButtonClick = () => {
+        fileInputRef.current.click();
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+            <div className="text-center p-10 bg-white rounded-lg shadow-lg">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                    Veuillez importer votre base de données en format Excel
+                </h2>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImport}
+                    className="hidden"
+                    accept=".xlsx, .xls"
+                />
+                <button
+                    onClick={onButtonClick}
+                    className="px-6 py-3 font-semibold text-white bg-blue-900 rounded-lg shadow-md hover:bg-blue-800 transition-colors"
+                >
+                    Import de la base de données
+                </button>
+            </div>
+        </div>
+    );
+};
+
+
 // --- APPLICATION PRINCIPALE ---
-export default function App() {
+const DashboardApp = ({ user, onLogout, setNotification, initialCases, onDataUpdate }) => {
     const [activeTab, setActiveTab] = React.useState('dashboard');
-    const [allCases, setAllCases] = React.useState(() => generateCasesData(200));
-    const [notification, setNotification] = React.useState({ type: '', message: '' });
+    const [allCases, setAllCases] = React.useState(initialCases);
     const [libsLoaded, setLibsLoaded] = React.useState({ xlsx: false, d3: false, leaflet: false });
     const [filteredCases, setFilteredCases] = React.useState(null);
     const [searchTerm, setSearchTerm] = React.useState('');
+    const [allFactures, setAllFactures] = React.useState(() => generateFacturesContacts(100));
 
-    const allFactures = React.useMemo(() => generateFacturesContacts(100), []);
+    React.useEffect(() => {
+        onDataUpdate(allCases);
+    }, [allCases, onDataUpdate]);
+
     const allMairies = React.useMemo(() => generateMairiesData(100), []);
     const allArpFrance = React.useMemo(() => generateArpFranceData(100), []);
     const allArpMonde = React.useMemo(() => generateArpMondeData(100), []);
@@ -893,15 +1040,6 @@ export default function App() {
 
     }, []);
 
-    React.useEffect(() => {
-        if (notification.message) {
-            const timer = setTimeout(() => {
-                setNotification({ type: '', message: '' });
-            }, 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [notification]);
-
     const genericFilter = (data, term) => {
         if (!term) return data;
         const lowercasedTerm = term.toLowerCase();
@@ -916,7 +1054,6 @@ export default function App() {
         if (!searchTerm) return allCases;
         const lowercasedTerm = searchTerm.toLowerCase();
 
-        // Spécifiquement pour la recherche par année sur les dossiers
         if (/^\d{4}$/.test(lowercasedTerm)) {
             return allCases.filter(item =>
                 (item.dateSaisine && item.dateSaisine.startsWith(lowercasedTerm)) ||
@@ -924,7 +1061,6 @@ export default function App() {
             );
         }
 
-        // Recherche générique pour les autres termes
         return allCases.filter(item =>
             Object.values(item).some(value =>
                 String(value).toLowerCase().includes(lowercasedTerm)
@@ -936,6 +1072,60 @@ export default function App() {
     const filteredAllMairies = React.useMemo(() => genericFilter(allMairies, searchTerm), [allMairies, searchTerm]);
     const filteredAllArpFrance = React.useMemo(() => genericFilter(allArpFrance, searchTerm), [allArpFrance, searchTerm]);
     const filteredAllArpMonde = React.useMemo(() => genericFilter(allArpMonde, searchTerm), [allArpMonde, searchTerm]);
+    
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            setNotification({ type: 'error', message: "Veuillez sélectionner un fichier Excel (.xlsx ou .xls)" });
+            return;
+        }
+
+        const allowedExtensions = /\.(xlsx|xls)$/i;
+        if (!allowedExtensions.test(file.name)) {
+            setNotification({ type: 'error', message: "Format de fichier non pris en charge. Veuillez choisir un fichier .xlsx ou .xls" });
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const bstr = evt.target.result;
+                const wb = window.XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = window.XLSX.utils.sheet_to_json(ws, { raw: false });
+
+                if (data.length === 0) {
+                    setNotification({ type: 'error', message: "Le fichier est vide ou mal formaté." });
+                    return;
+                }
+                
+                const formattedData = data.map((row, index) => ({
+                    id: row['id'] || `IMPORT-${index}`,
+                    dateSaisine: row['dateSaisine'] || new Date().toISOString().split('T')[0],
+                    numSinistre: row['numSinistre'] || 'N/A',
+                   compagnie: row['compagnie'] || 'N/A',
+                   dateSinistre: row['dateSinistre'] || 'N/A',
+                   nature: row['nature'] || 'N/A',
+                   adresse: row['adresse'] || 'N/A',
+                   departmentCode: row['departmentCode'] || null,
+                    montant: Number(row['montant']) || 0,
+                    dateCloture: row['dateCloture'] || null,
+                    resultat: row['resultat'] || null,
+                }));
+                setAllCases(formattedData);
+                setNotification({ type: 'success', message: `Importation réussie ! ${formattedData.length} dossiers ont été chargés.` });
+            } catch (error) {
+                setNotification({ type: 'error', message: "Erreur lors de la lecture du fichier. Vérifiez son contenu." });
+                console.error("Erreur lecture fichier : ", error);
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    if (allCases.length === 0) {
+        return <InitialImportView handleImport={handleFileUpload} />;
+    }
 
     const renderContent = () => {
         if (filteredCases) {
@@ -967,7 +1157,7 @@ export default function App() {
             case 'reports':
                 return <ReportsView cases={allCases} d3={libsLoaded.d3 ? window.d3 : null} />;
             case 'factures':
-                return <PaginatedTableView title="Vérification des Factures" data={filteredAllFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Contact'}, {key: 'observations', header: 'Observations'}]} />;
+                return <PaginatedTableView title="Vérification des Factures" data={filteredAllFactures} columns={[{key: 'enseigne', header: 'Enseigne'}, {key: 'mail1', header: 'Mail 1'}, {key: 'contact', header: 'Identité Contact'}, {key: 'telephone', header: 'Téléphone'}, {key: 'observations', header: 'Observations'}]} />;
             case 'mairies':
                 return <PaginatedTableView title="Répertoire des Mairies" data={filteredAllMairies} columns={[{key: 'nom', header: 'Nom'}, {key: 'coordonnees', header: 'Coordonnées'}]} />;
             case 'jurisprudence':
@@ -988,7 +1178,6 @@ export default function App() {
         </button>
     );
 
-    const notifBgColor = notification.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
     const tabsWithSearchBar = ['cases', 'factures', 'mairies', 'jurisprudence', 'arp'];
     const showSearchBar = tabsWithSearchBar.includes(activeTab);
 
@@ -1020,13 +1209,6 @@ export default function App() {
                 </div>
             </nav>
             <main className="flex-1 flex flex-col relative bg-gray-50">
-                {notification.message && (
-                    <div className={`absolute top-4 right-4 ${notifBgColor} px-4 py-3 rounded-lg shadow-lg flex items-center z-50 animate-fade-in-down`}>
-                        <Info size={20} className="mr-3"/>
-                        <span className="block sm:inline">{notification.message}</span>
-                        <button onClick={() => setNotification({type:'', message:''})} className="ml-4 font-bold"><X size={16}/></button>
-                    </div>
-                )}
                 <header className={`bg-white shadow-sm p-4 flex items-center ${showSearchBar ? 'justify-between' : 'justify-end'}`}>
                     {showSearchBar && (
                        <div className="relative w-1/3">
@@ -1042,17 +1224,96 @@ export default function App() {
                     )}
                     <div className="flex items-center gap-4">
                         <Bell size={24} className="text-gray-600" />
-                            <UserCircle size={32} className="text-gray-600" />
-                            <div>
-                                <p className="font-semibold text-sm text-gray-800">APIS_33</p>
-                                <p className="text-xs text-gray-500">Enquêteur Principal</p>
-                           </div>
+                        <UserCircle size={32} className="text-gray-600" />
+                        <div>
+                            <p className="font-semibold text-sm text-gray-800">{user.email}</p>
+                            <p className="text-xs text-gray-500">Enquêteur Principal</p>
                         </div>
-                    </header>
+                        <button onClick={onLogout} className="text-gray-600 hover:text-red-500" title="Déconnexion">
+                            <LogOut size={20} />
+                        </button>
+                    </div>
+                </header>
                 <div className="flex-1 p-8 overflow-y-auto">
                     {renderContent()}
                </div>
            </main>
         </div>
     );
+}
+
+export default function App() {
+    const [user, setUser] = React.useState(null);
+    const [users, setUsers] = React.useState(() => {
+        const savedUsers = localStorage.getItem('dashboard_users');
+        return savedUsers ? JSON.parse(savedUsers) : { 'test@test.com': 'password' };
+    });
+    const [currentUserCases, setCurrentUserCases] = React.useState([]);
+    const [notification, setNotification] = React.useState({ type: '', message: '' });
+
+    React.useEffect(() => {
+        localStorage.setItem('dashboard_users', JSON.stringify(users));
+    }, [users]);
+    
+    React.useEffect(() => {
+        if (notification.message) {
+            const timer = setTimeout(() => {
+                setNotification({ type: '', message: '' });
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
+
+    const handleLogin = (email, password) => {
+        if (users[email] && users[email] === password) {
+            const userData = localStorage.getItem(`dashboard_data_${email}`);
+            setCurrentUserCases(userData ? JSON.parse(userData) : generateCasesData(200)); 
+            setUser({ email });
+            setNotification({ type: 'success', message: 'Connexion réussie !' });
+        } else {
+            setNotification({ type: 'error', message: 'Email ou mot de passe incorrect.' });
+        }
+    };
+
+    const handleSignup = (email, password) => {
+        if (users[email]) {
+            setNotification({ type: 'error', message: 'Cet utilisateur existe déjà.' });
+        } else {
+            setUsers(prev => ({ ...prev, [email]: password }));
+            setCurrentUserCases([]); 
+            localStorage.setItem(`dashboard_data_${email}`, JSON.stringify([]));
+            setUser({ email });
+            setNotification({ type: 'success', message: 'Compte créé avec succès !' });
+        }
+    };
+
+    const handleDataUpdate = (newData) => {
+        setCurrentUserCases(newData);
+        if (user) {
+            localStorage.setItem(`dashboard_data_${user.email}`, JSON.stringify(newData));
+        }
+    };
+
+    const handleLogout = () => {
+        setUser(null);
+    };
+
+    const notifBgColor = notification.type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+
+    if (!user) {
+        return (
+            <>
+                {notification.message && (
+                    <div className={`absolute top-4 right-4 ${notifBgColor} px-4 py-3 rounded-lg shadow-lg flex items-center z-50 animate-fade-in-down`}>
+                        <Info size={20} className="mr-3"/>
+                        <span className="block sm:inline">{notification.message}</span>
+                        <button onClick={() => setNotification({type:'', message:''})} className="ml-4 font-bold"><X size={16}/></button>
+                    </div>
+                )}
+                <LoginView onLogin={handleLogin} onSignup={handleSignup} setNotification={setNotification} />
+            </>
+        );
+    }
+
+    return <DashboardApp user={user} onLogout={handleLogout} setNotification={setNotification} initialCases={currentUserCases} onDataUpdate={handleDataUpdate} />;
 }
